@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget xmlns="http://www.w3.org/ns/widgets">
+    <feature name="App">
+        <param name="android-package" value="org.xwalk.runtime.api.App" />
+    </feature>
+    <feature name="Device">
+        <param name="android-package" value="org.xwalk.runtime.api.Device" />
+    </feature>
+    <feature name="NetworkStatus">
+        <param name="android-package" value="org.xwalk.runtime.api.NetworkManager" />
+    </feature>
+    <extensions>
+    </extensions>
+</widget>

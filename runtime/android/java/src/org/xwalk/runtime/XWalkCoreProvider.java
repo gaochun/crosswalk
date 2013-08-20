@@ -41,6 +41,7 @@ public class XWalkCoreProvider implements XWalkRuntimeViewProvider {
 
     @Override
     public void loadAppFromUrl(String url) {
+        extensionManager.init();
         mXwalkView.loadUrl(url);
     }
 
