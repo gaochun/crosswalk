@@ -33,8 +33,12 @@ class XWalkViewDelegate {
         // the CommandLine object before XWalkViewContent is created, here will create
         // the object to guarantee the CommandLine object is not null and the
         // consequent prodedure does not crash.
-        if (!CommandLine.isInitialized())
-            CommandLine.init(null);
+        if (!CommandLine.isInitialized()) {
+            String[] commandLine = new String[2];
+            commandLine[0] = "--allow-file-access-from-files"; 
+            commandLine[1] = "--allow-file-access-from-files";
+            CommandLine.init(commandLine);
+        }
 
         ResourceExtractor.setMandatoryPaksToExtract(MANDATORY_PAKS);
         ResourceExtractor.setExtractImplicitLocaleForTesting(false);
