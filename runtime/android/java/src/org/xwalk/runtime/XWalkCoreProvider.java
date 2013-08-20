@@ -8,17 +8,23 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.view.View;
-import android.widget.FrameLayout;
 
 import org.xwalk.core.XWalkView;
+import org.xwalk.runtime.extension.ExposedJsApi;
+import org.xwalk.runtime.extension.ExtensionResult;
+import org.xwalk.runtime.extension.NativeToJsMessageQueue;
+import org.xwalk.runtime.extension.XWalkExtensionManager;
 
 /**
  * The implementation class for XWalkCoreProvider. It calls the interfaces provided
  * by runtime core and customizes the behaviors here.
  */
-class XWalkCoreProvider implements XWalkRuntimeViewProvider {
+public class XWalkCoreProvider implements XWalkRuntimeViewProvider {
     private Context mContext;
     private XWalkView mXwalkView;
+    private XWalkExtensionManager extensionManager;
+    private NativeToJsMessageQueue jsMessageQueue;
+    private ExposedJsApi exposedJsApi;
 
     public XWalkCoreProvider(Context context, Activity activity) {
         mContext = context;
@@ -26,6 +32,11 @@ class XWalkCoreProvider implements XWalkRuntimeViewProvider {
         // TODO(yongsheng): do customizations for XWalkView. There will
         // be many callback classes which are needed to be implemented.
         mXwalkView = new XWalkView(context, activity);
+
+        extensionManager = new XWalkExtensionManager(this, activity);
+        jsMessageQueue = new NativeToJsMessageQueue(this, activity);
+        exposedJsApi = new ExposedJsApi(extensionManager, jsMessageQueue);
+        mXwalkView.addJavascriptInterface(exposedJsApi, "_cordovaNative");
     }
 
     @Override
@@ -81,5 +92,29 @@ class XWalkCoreProvider implements XWalkRuntimeViewProvider {
     @Override
     public View getView() {
         return mXwalkView;
+    }
+
+    public void postMessage(String id, Object data) {
+        if (this.extensionManager != null) {
+            this.extensionManager.postMessage(id, data);
+        }
+    }
+
+    public void sendExtensionResult(ExtensionResult result, String callbackId) {
+        this.jsMessageQueue.addExtensionResult(result, callbackId);
+    }
+
+    public void setNetworkAvailable(boolean networkUp) {
+        // TODO(gaochun): Handle network status change event.
+    }
+
+    public interface JavascriptCallback {
+        // Results return
+        void onGetJavascriptResult(String jsonResult);
+    }
+
+    public void evaluateJavascript(
+            String script, JavascriptCallback callback) throws IllegalStateException {
+        // TODO(gaochun): Evaluate javascript in runtime.
     }
 }
