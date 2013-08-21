@@ -39,7 +39,7 @@ import android.util.Log;
 public class Device extends XWalkExtension {
     public static final String TAG = "Device";
 
-    public static String cordovaVersion = "2.9.0rc1";              // Cordova version
+    public static String xwalkVersion = "undefined";            // XWalk version
     public static String platform = "Android";                  // Device OS
     public static String uuid;                                  // Device UUID
 
@@ -55,8 +55,8 @@ public class Device extends XWalkExtension {
      * Sets the context of the Command. This can then be used to do things like
      * get file paths associated with the Activity.
      *
-     * @param cordova The context of the main Activity.
-     * @param webView The CordovaWebView Cordova is running in.
+     * @param xwalk The context of the main Activity.
+     * @param webView The XWalkWebView XWalk is running in.
      */
     public void initialize(Activity activity, XWalkCoreProvider app) {
         super.initialize(activity, app);
@@ -78,7 +78,7 @@ public class Device extends XWalkExtension {
             r.put("uuid", Device.uuid);
             r.put("version", this.getOSVersion());
             r.put("platform", Device.platform);
-            r.put("cordova", Device.cordovaVersion);
+            r.put("xwalk", Device.xwalkVersion);
             r.put("model", this.getModel());
             callbackContext.success(r);
         }
@@ -102,12 +102,12 @@ public class Device extends XWalkExtension {
     /**
      * Listen for telephony events: RINGING, OFFHOOK and IDLE
      * Send these events to all plugins using
-     *      CordovaActivity.onMessage("telephone", "ringing" | "offhook" | "idle")
+     *      XWalkActivity.onMessage("telephone", "ringing" | "offhook" | "idle")
      */
     private void initTelephonyReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-        //final CordovaInterface mycordova = this.cordova;
+        //final XWalkInterface myxwalk = this.xwalk;
         this.telephonyReceiver = new BroadcastReceiver() {
 
             @Override
@@ -158,12 +158,12 @@ public class Device extends XWalkExtension {
     }
 
     /**
-     * Get the Cordova version.
+     * Get the XWalk version.
      *
      * @return
      */
-    public String getCordovaVersion() {
-        return Device.cordovaVersion;
+    public String getXWalkVersion() {
+        return Device.xwalkVersion;
     }
 
     public String getModel() {

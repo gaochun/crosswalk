@@ -23,7 +23,7 @@ import org.json.JSONException;
 
 /**
  * Contains APIs that the JS can call. All functions in here should be added to
- * cordova-js/lib/android/plugin/android/promptbasednativeapi.js
+ * lib/android/plugin/android/promptbasednativeapi.js
  */
 public class ExposedJsApi {
     

@@ -88,8 +88,8 @@ public class NetworkManager extends XWalkExtension {
      * Sets the context of the Command. This can then be used to do things like
      * get file paths associated with the Activity.
      *
-     * @param cordova The context of the main Activity.
-     * @param webView The CordovaWebView Cordova is running in.
+     * @param activity The main Activity.
+     * @param app The XWalkCoreProvider.
      */
     public void initialize(Activity activity, XWalkCoreProvider app) {
         super.initialize(activity, app);
@@ -187,7 +187,7 @@ public class NetworkManager extends XWalkExtension {
                 type = getType(info);
             }
         }
-        Log.d("CordovaNetworkManager", "Connection Type: " + type);
+        Log.d("XWalkNetworkManager", "Connection Type: " + type);
         return type;
     }
 

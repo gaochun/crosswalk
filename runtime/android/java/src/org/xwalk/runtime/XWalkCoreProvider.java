@@ -36,7 +36,7 @@ public class XWalkCoreProvider implements XWalkRuntimeViewProvider {
         extensionManager = new XWalkExtensionManager(this, activity);
         jsMessageQueue = new NativeToJsMessageQueue(this, activity);
         exposedJsApi = new ExposedJsApi(extensionManager, jsMessageQueue);
-        mXwalkView.addJavascriptInterface(exposedJsApi, "_cordovaNative");
+        mXwalkView.addJavascriptInterface(exposedJsApi, "_xwalkNative");
     }
 
     @Override

@@ -31,7 +31,7 @@ import android.util.Log;
 public class NativeToJsMessageQueue {
     private static final String LOG_TAG = "JsMessageQueue";
 
-    // This must match the default value in incubator-cordova-js/lib/android/exec.js
+    // This must match the default value in incubator-xwalk-js/lib/android/exec.js
     private static final int DEFAULT_BRIDGE_MODE = 2;
     
     // Set this to true to force extension results to be encoding as
@@ -199,7 +199,7 @@ public class NativeToJsMessageQueue {
                 }
             }
             if (!willSendAllMessages) {
-                sb.append("window.setTimeout(function(){cordova.require('cordova/plugin/android/polling').pollOnce();},0);");
+                sb.append("window.setTimeout(function(){xwalk.require('xwalk/plugin/android/polling').pollOnce();},0);");
             }
             for (int i = willSendAllMessages ? 1 : 0; i < numMessagesToSend; ++i) {
                 sb.append('}');
@@ -418,7 +418,7 @@ public class NativeToJsMessageQueue {
             } else {
                 int status = extensionResult.getStatus();
                 boolean success = (status == ExtensionResult.Status.OK.ordinal()) || (status == ExtensionResult.Status.NO_RESULT.ordinal());
-                sb.append("cordova.callbackFromNative('")
+                sb.append("xwalk.callbackFromNative('")
                   .append(jsPayloadOrCallbackId)
                   .append("',")
                   .append(success)

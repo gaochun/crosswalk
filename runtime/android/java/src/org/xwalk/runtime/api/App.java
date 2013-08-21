@@ -32,7 +32,7 @@ import android.util.Log;
 import java.util.HashMap;
 
 /**
- * This class exposes methods in Cordova that can be called from JavaScript.
+ * This class exposes methods in XWalk that can be called from JavaScript.
  */
 public class App extends XWalkExtension {
 
@@ -50,7 +50,7 @@ public class App extends XWalkExtension {
 
         try {
             if (action.equals("show")) {
-                // This gets called from JavaScript onCordovaReady to show the webview.
+                // This gets called from JavaScript onXWalkReady to show the webview.
                 // I recommend we change the name of the Message as spinner/stop is not
                 // indicative of what this actually does (shows the webview).
                 activity.runOnUiThread(new Runnable() {
@@ -84,7 +84,7 @@ public class App extends XWalkExtension {
      * Load the url into the webview.
      *
      * @param url
-     * @param props			Properties that can be passed in to the Cordova activity (i.e. loadingDialog, wait, ...)
+     * @param props			Properties that can be passed in to the XWalk activity (i.e. loadingDialog, wait, ...)
      * @throws JSONException
      */
     public void loadUrl(String url, JSONObject props) throws JSONException {

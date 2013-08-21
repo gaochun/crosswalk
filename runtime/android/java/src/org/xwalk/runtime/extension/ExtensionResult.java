@@ -133,12 +133,12 @@ public class ExtensionResult {
 
     @Deprecated // Use sendExtensionResult instead of sendJavascript.
     public String toSuccessCallbackString(String callbackId) {
-        return "cordova.callbackSuccess('"+callbackId+"',"+this.getJSONString()+");";
+        return "xwalk.callbackSuccess('"+callbackId+"',"+this.getJSONString()+");";
     }
 
     @Deprecated // Use sendExtensionResult instead of sendJavascript.
     public String toErrorCallbackString(String callbackId) {
-        return "cordova.callbackError('"+callbackId+"', " + this.getJSONString()+ ");";
+        return "xwalk.callbackError('"+callbackId+"', " + this.getJSONString()+ ");";
     }
 
     public static final int MESSAGE_TYPE_STRING = 1;

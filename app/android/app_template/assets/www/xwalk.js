@@ -19,7 +19,7 @@
  under the License.
 */
 ;(function() {
-var CORDOVA_JS_BUILD_LABEL = '2.9.0-0-g83dc4bd';
+var XWALK_JS_BUILD_LABEL = 'undefined';
 // file: lib/scripts/require.js
 
 var require,
@@ -95,11 +95,11 @@ if (typeof module === "object" && typeof require === "function") {
     module.exports.define = define;
 }
 
-// file: lib/cordova.js
-define("cordova", function(require, exports, module) {
+// file: lib/xwalk.js
+define("xwalk", function(require, exports, module) {
 
 
-var channel = require('cordova/channel');
+var channel = require('xwalk/channel');
 
 /**
  * Listen for DOMContentLoaded and notify our channel subscribers.
@@ -183,7 +183,7 @@ if(typeof window.console === "undefined") {
     };
 }
 
-var cordova = {
+var xwalk = {
     define:define,
     require:require,
     /**
@@ -205,7 +205,7 @@ var cordova = {
         delete documentEventHandlers[event];
     },
     /**
-     * Retrieve original event handlers that were replaced by Cordova
+     * Retrieve original event handlers that were replaced by XWalk
      *
      * @return object
      */
@@ -225,7 +225,7 @@ var cordova = {
             }
             else {
               setTimeout(function() {
-                  // Fire deviceready on listeners that were registered before cordova.js was loaded.
+                  // Fire deviceready on listeners that were registered before xwalk.js was loaded.
                   if (type == 'deviceready') {
                       document.dispatchEvent(evt);
                   }
@@ -272,7 +272,7 @@ var cordova = {
      */
     callbackSuccess: function(callbackId, args) {
         try {
-            cordova.callbackFromNative(callbackId, true, args.status, [args.message], args.keepCallback);
+            xwalk.callbackFromNative(callbackId, true, args.status, [args.message], args.keepCallback);
         } catch (e) {
             console.log("Error in error callback: " + callbackId + " = "+e);
         }
@@ -285,7 +285,7 @@ var cordova = {
         // TODO: Deprecate callbackSuccess and callbackError in favour of callbackFromNative.
         // Derive success from status.
         try {
-            cordova.callbackFromNative(callbackId, false, args.status, [args.message], args.keepCallback);
+            xwalk.callbackFromNative(callbackId, false, args.status, [args.message], args.keepCallback);
         } catch (e) {
             console.log("Error in error callback: " + callbackId + " = "+e);
         }
@@ -295,9 +295,9 @@ var cordova = {
      * Called by native code when returning the result from an action.
      */
     callbackFromNative: function(callbackId, success, status, args, keepCallback) {
-        var callback = cordova.callbacks[callbackId];
+        var callback = xwalk.callbacks[callbackId];
         if (callback) {
-            if (success && status == cordova.callbackStatus.OK) {
+            if (success && status == xwalk.callbackStatus.OK) {
                 callback.success && callback.success.apply(null, args);
             } else if (!success) {
                 callback.fail && callback.fail.apply(null, args);
@@ -305,12 +305,12 @@ var cordova = {
 
             // Clear callback if not expecting any more results
             if (!keepCallback) {
-                delete cordova.callbacks[callbackId];
+                delete xwalk.callbacks[callbackId];
             }
         }
     },
     addConstructor: function(func) {
-        channel.onCordovaReady.subscribe(function() {
+        channel.onXWalkReady.subscribe(function() {
             try {
                 func();
             } catch(e) {
@@ -321,19 +321,19 @@ var cordova = {
 };
 
 // Register pause, resume and deviceready channels as events on document.
-channel.onPause = cordova.addDocumentEventHandler('pause');
-channel.onResume = cordova.addDocumentEventHandler('resume');
-channel.onDeviceReady = cordova.addStickyDocumentEventHandler('deviceready');
+channel.onPause = xwalk.addDocumentEventHandler('pause');
+channel.onResume = xwalk.addDocumentEventHandler('resume');
+channel.onDeviceReady = xwalk.addStickyDocumentEventHandler('deviceready');
 
-module.exports = cordova;
+module.exports = xwalk;
 
 });
 
 // file: lib/common/argscheck.js
-define("cordova/argscheck", function(require, exports, module) {
+define("xwalk/argscheck", function(require, exports, module) {
 
-var exec = require('cordova/exec');
-var utils = require('cordova/utils');
+var exec = require('xwalk/exec');
+var utils = require('xwalk/utils');
 
 var moduleExports = module.exports;
 
@@ -396,9 +396,9 @@ moduleExports.enableChecks = true;
 });
 
 // file: lib/common/builder.js
-define("cordova/builder", function(require, exports, module) {
+define("xwalk/builder", function(require, exports, module) {
 
-var utils = require('cordova/utils');
+var utils = require('xwalk/utils');
 
 function each(objects, func, context) {
     for (var prop in objects) {
@@ -464,7 +464,7 @@ function include(parent, objects, clobber, merge) {
             include(result, obj.children, clobber, merge);
           }
         } catch(e) {
-          utils.alert('Exception building cordova JS globals: ' + e + ' for key "' + key + '"');
+          utils.alert('Exception building xwalk JS globals: ' + e + ' for key "' + key + '"');
         }
     });
 }
@@ -509,24 +509,24 @@ exports.replaceHookForTesting = function() {};
 });
 
 // file: lib/common/channel.js
-define("cordova/channel", function(require, exports, module) {
+define("xwalk/channel", function(require, exports, module) {
 
-var utils = require('cordova/utils'),
+var utils = require('xwalk/utils'),
     nextGuid = 1;
 
 /**
  * Custom pub-sub "channel" that can have functions subscribed to it
  * This object is used to define and control firing of events for
- * cordova initialization, as well as for custom events thereafter.
+ * xwalk initialization, as well as for custom events thereafter.
  *
- * The order of events during page load and Cordova startup is as follows:
+ * The order of events during page load and XWalk startup is as follows:
  *
  * onDOMContentLoaded*         Internal event that is received when the web page is loaded and parsed.
- * onNativeReady*              Internal event that indicates the Cordova native side is ready.
- * onCordovaReady*             Internal event fired when all Cordova JavaScript objects have been created.
- * onCordovaInfoReady*         Internal event fired when device properties are available.
- * onCordovaConnectionReady*   Internal event fired when the connection property has been set.
- * onDeviceReady*              User event fired to indicate that Cordova is ready
+ * onNativeReady*              Internal event that indicates the XWalk native side is ready.
+ * onXWalkReady*             Internal event fired when all XWalk JavaScript objects have been created.
+ * onXWalkInfoReady*         Internal event fired when device properties are available.
+ * onXWalkConnectionReady*   Internal event fired when the connection property has been set.
+ * onDeviceReady*              User event fired to indicate that XWalk is ready
  * onResume                    User event fired to indicate a start/resume lifecycle event
  * onPause                     User event fired to indicate a pause lifecycle event
  * onDestroy*                  Internal event fired when app is being destroyed (User should use window.onunload event, not this one).
@@ -534,8 +534,8 @@ var utils = require('cordova/utils'),
  * The events marked with an * are sticky. Once they have fired, they will stay in the fired state.
  * All listeners that subscribe after the event is fired will be executed right away.
  *
- * The only Cordova events that user code should register for are:
- *      deviceready           Cordova native code is initialized and Cordova APIs can be called from JavaScript
+ * The only XWalk events that user code should register for are:
+ *      deviceready           XWalk native code is initialized and XWalk APIs can be called from JavaScript
  *      pause                 App has moved to background
  *      resume                App has returned to foreground
  *
@@ -596,15 +596,15 @@ var Channel = function(type, sticky) {
         },
 
         /**
-         * cordova Channels that must fire before "deviceready" is fired.
+         * xwalk Channels that must fire before "deviceready" is fired.
          */
         deviceReadyChannelsArray: [],
         deviceReadyChannelsMap: {},
 
         /**
          * Indicate that a feature needs to be initialized before it is ready to be used.
-         * This holds up Cordova's "deviceready" event until the feature has been initialized
-         * and Cordova.initComplete(feature) is called.
+         * This holds up XWalk's "deviceready" event until the feature has been initialized
+         * and XWalk.initComplete(feature) is called.
          *
          * @param feature {String}     The unique feature name
          */
@@ -721,23 +721,23 @@ Channel.prototype.fire = function(e) {
 // DOM event that is received when the web page is loaded and parsed.
 channel.createSticky('onDOMContentLoaded');
 
-// Event to indicate the Cordova native side is ready.
+// Event to indicate the XWalk native side is ready.
 channel.createSticky('onNativeReady');
 
-// Event to indicate that all Cordova JavaScript objects have been created
+// Event to indicate that all XWalk JavaScript objects have been created
 // and it's time to run plugin constructors.
-channel.createSticky('onCordovaReady');
+channel.createSticky('onXWalkReady');
 
 // Event to indicate that device properties are available
-channel.createSticky('onCordovaInfoReady');
+channel.createSticky('onXWalkInfoReady');
 
 // Event to indicate that the connection property has been set.
-channel.createSticky('onCordovaConnectionReady');
+channel.createSticky('onXWalkConnectionReady');
 
 // Event to indicate that all automatically loaded JS plugins are loaded and ready.
 channel.createSticky('onPluginsReady');
 
-// Event to indicate that Cordova is ready
+// Event to indicate that XWalk is ready
 channel.createSticky('onDeviceReady');
 
 // Event to indicate a resume lifecycle event
@@ -750,8 +750,8 @@ channel.create('onPause');
 channel.createSticky('onDestroy');
 
 // Channels that must fire before "deviceready" is fired.
-channel.waitForInitialization('onCordovaReady');
-channel.waitForInitialization('onCordovaConnectionReady');
+channel.waitForInitialization('onXWalkReady');
+channel.waitForInitialization('onXWalkConnectionReady');
 channel.waitForInitialization('onDOMContentLoaded');
 
 module.exports = channel;
@@ -759,7 +759,7 @@ module.exports = channel;
 });
 
 // file: lib/common/commandProxy.js
-define("cordova/commandProxy", function(require, exports, module) {
+define("xwalk/commandProxy", function(require, exports, module) {
 
 
 // internal map of proxy function
@@ -767,14 +767,14 @@ var CommandProxyMap = {};
 
 module.exports = {
 
-    // example: cordova.commandProxy.add("Accelerometer",{getCurrentAcceleration: function(successCallback, errorCallback, options) {...},...);
+    // example: xwalk.commandProxy.add("Accelerometer",{getCurrentAcceleration: function(successCallback, errorCallback, options) {...},...);
     add:function(id,proxyObj) {
         console.log("adding proxy for " + id);
         CommandProxyMap[id] = proxyObj;
         return proxyObj;
     },
 
-    // cordova.commandProxy.remove("Accelerometer");
+    // xwalk.commandProxy.remove("Accelerometer");
     remove:function(id) {
         var proxy = CommandProxyMap[id];
         delete CommandProxyMap[id];
@@ -789,31 +789,31 @@ module.exports = {
 });
 
 // file: lib/android/exec.js
-define("cordova/exec", function(require, exports, module) {
+define("xwalk/exec", function(require, exports, module) {
 
 /**
- * Execute a cordova command.  It is up to the native side whether this action
+ * Execute a xwalk command.  It is up to the native side whether this action
  * is synchronous or asynchronous.  The native side can return:
  *      Synchronous: PluginResult object as a JSON string
  *      Asynchronous: Empty string ""
- * If async, the native side will cordova.callbackSuccess or cordova.callbackError,
+ * If async, the native side will xwalk.callbackSuccess or xwalk.callbackError,
  * depending upon the result of the action.
  *
  * @param {Function} success    The success callback
  * @param {Function} fail       The fail callback
  * @param {String} service      The name of the service to use
- * @param {String} action       Action to be run in cordova
+ * @param {String} action       Action to be run in xwalk
  * @param {String[]} [args]     Zero or more arguments to pass to the method
  */
-var cordova = require('cordova'),
-    nativeApiProvider = require('cordova/plugin/android/nativeapiprovider'),
-    utils = require('cordova/utils'),
+var xwalk = require('xwalk'),
+    nativeApiProvider = require('xwalk/plugin/android/nativeapiprovider'),
+    utils = require('xwalk/utils'),
     jsToNativeModes = {
         PROMPT: 0,
         JS_OBJECT: 1,
         // This mode is currently for benchmarking purposes only. It must be enabled
         // on the native side through the ENABLE_LOCATION_CHANGE_EXEC_MODE
-        // constant within CordovaWebViewClient.java before it will work.
+        // constant within XWalkWebViewClient.java before it will work.
         LOCATION_CHANGE: 2
     },
     nativeToJsModes = {
@@ -850,11 +850,11 @@ function androidExec(success, fail, service, action, args) {
         }
     }
 
-    var callbackId = service + cordova.callbackId++,
+    var callbackId = service + xwalk.callbackId++,
         argsJson = JSON.stringify(args);
 
     if (success || fail) {
-        cordova.callbacks[callbackId] = {success:success, fail:fail};
+        xwalk.callbacks[callbackId] = {success:success, fail:fail};
     }
 
     if (jsToNativeBridgeMode == jsToNativeModes.LOCATION_CHANGE) {
@@ -888,7 +888,7 @@ function pollingTimerFunc() {
 
 function hookOnlineApis() {
     function proxyEvent(e) {
-        cordova.fireWindowEvent(e.type);
+        xwalk.fireWindowEvent(e.type);
     }
     // The network module takes care of firing online and offline events.
     // It currently fires them only on document though, so we bridge them
@@ -896,8 +896,8 @@ function hookOnlineApis() {
     // events).
     window.addEventListener('online', pollOnce, false);
     window.addEventListener('offline', pollOnce, false);
-    cordova.addWindowEventHandler('online');
-    cordova.addWindowEventHandler('offline');
+    xwalk.addWindowEventHandler('online');
+    xwalk.addWindowEventHandler('offline');
     document.addEventListener('online', proxyEvent, false);
     document.addEventListener('offline', proxyEvent, false);
 }
@@ -908,8 +908,8 @@ androidExec.jsToNativeModes = jsToNativeModes;
 androidExec.nativeToJsModes = nativeToJsModes;
 
 androidExec.setJsToNativeBridgeMode = function(mode) {
-    if (mode == jsToNativeModes.JS_OBJECT && !window._cordovaNative) {
-        console.log('Falling back on PROMPT mode since _cordovaNative is missing. Expected for Android 3.2 and lower only.');
+    if (mode == jsToNativeModes.JS_OBJECT && !window._xwalkNative) {
+        console.log('Falling back on PROMPT mode since _xwalkNative is missing. Expected for Android 3.2 and lower only.');
         mode = jsToNativeModes.PROMPT;
     }
     nativeApiProvider.setPreferPrompt(mode == jsToNativeModes.PROMPT);
@@ -972,7 +972,7 @@ function processMessage(message) {
             } else {
                 payload = JSON.parse(message.slice(nextSpaceIdx + 1));
             }
-            cordova.callbackFromNative(callbackId, success, status, [payload], keepCallback);
+            xwalk.callbackFromNative(callbackId, success, status, [payload], keepCallback);
         } else {
             console.log("processMessage failed: invalid message:" + message);
         }
@@ -1021,9 +1021,9 @@ module.exports = androidExec;
 });
 
 // file: lib/common/modulemapper.js
-define("cordova/modulemapper", function(require, exports, module) {
+define("xwalk/modulemapper", function(require, exports, module) {
 
-var builder = require('cordova/builder'),
+var builder = require('xwalk/builder'),
     moduleMap = define.moduleMap,
     symbolList,
     deprecationMap;
@@ -1122,23 +1122,23 @@ exports.reset();
 });
 
 // file: lib/android/platform.js
-define("cordova/platform", function(require, exports, module) {
+define("xwalk/platform", function(require, exports, module) {
 
 module.exports = {
     id: "android",
     initialize:function() {
-        var channel = require("cordova/channel"),
-            cordova = require('cordova'),
-            exec = require('cordova/exec'),
-            modulemapper = require('cordova/modulemapper');
+        var channel = require("xwalk/channel"),
+            xwalk = require('xwalk'),
+            exec = require('xwalk/exec'),
+            modulemapper = require('xwalk/modulemapper');
 
-        modulemapper.loadMatchingModules(/cordova.*\/symbols$/);
-        modulemapper.clobbers('cordova/plugin/android/app', 'navigator.app');
+        modulemapper.loadMatchingModules(/xwalk.*\/symbols$/);
+        modulemapper.clobbers('xwalk/plugin/android/app', 'navigator.app');
 
         modulemapper.mapModules(window);
 
         // Inject a listener for the backbutton on the document.
-        var backButtonChannel = cordova.addDocumentEventHandler('backbutton');
+        var backButtonChannel = xwalk.addDocumentEventHandler('backbutton');
         backButtonChannel.onHasSubscribersChange = function() {
             // If we just attached the first handler or detached the last handler,
             // let native know we need to override the back button.
@@ -1146,21 +1146,21 @@ module.exports = {
         };
 
         // Add hardware MENU and SEARCH button handlers
-        cordova.addDocumentEventHandler('menubutton');
-        cordova.addDocumentEventHandler('searchbutton');
+        xwalk.addDocumentEventHandler('menubutton');
+        xwalk.addDocumentEventHandler('searchbutton');
 
         // Let native code know we are all done on the JS side.
         // Native code will then un-hide the WebView.
         channel.join(function() {
             exec(null, null, "App", "show", []);
-        }, [channel.onCordovaReady]);
+        }, [channel.onXWalkReady]);
     }
 };
 
 });
 
 // file: lib/common/plugin/Acceleration.js
-define("cordova/plugin/Acceleration", function(require, exports, module) {
+define("xwalk/plugin/Acceleration", function(require, exports, module) {
 
 var Acceleration = function(x, y, z, timestamp) {
     this.x = x;
@@ -1174,12 +1174,12 @@ module.exports = Acceleration;
 });
 
 // file: lib/common/plugin/Camera.js
-define("cordova/plugin/Camera", function(require, exports, module) {
+define("xwalk/plugin/Camera", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    Camera = require('cordova/plugin/CameraConstants'),
-    CameraPopoverHandle = require('cordova/plugin/CameraPopoverHandle');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    Camera = require('xwalk/plugin/CameraConstants'),
+    CameraPopoverHandle = require('xwalk/plugin/CameraPopoverHandle');
 
 var cameraExport = {};
 
@@ -1232,7 +1232,7 @@ module.exports = cameraExport;
 });
 
 // file: lib/common/plugin/CameraConstants.js
-define("cordova/plugin/CameraConstants", function(require, exports, module) {
+define("xwalk/plugin/CameraConstants", function(require, exports, module) {
 
 module.exports = {
   DestinationType:{
@@ -1270,9 +1270,9 @@ module.exports = {
 });
 
 // file: lib/common/plugin/CameraPopoverHandle.js
-define("cordova/plugin/CameraPopoverHandle", function(require, exports, module) {
+define("xwalk/plugin/CameraPopoverHandle", function(require, exports, module) {
 
-var exec = require('cordova/exec');
+var exec = require('xwalk/exec');
 
 /**
  * A handle to an image picker popover.
@@ -1288,9 +1288,9 @@ module.exports = CameraPopoverHandle;
 });
 
 // file: lib/common/plugin/CameraPopoverOptions.js
-define("cordova/plugin/CameraPopoverOptions", function(require, exports, module) {
+define("xwalk/plugin/CameraPopoverOptions", function(require, exports, module) {
 
-var Camera = require('cordova/plugin/CameraConstants');
+var Camera = require('xwalk/plugin/CameraConstants');
 
 /**
  * Encapsulates options for iOS Popover image picker
@@ -1310,7 +1310,7 @@ module.exports = CameraPopoverOptions;
 });
 
 // file: lib/common/plugin/CaptureAudioOptions.js
-define("cordova/plugin/CaptureAudioOptions", function(require, exports, module) {
+define("xwalk/plugin/CaptureAudioOptions", function(require, exports, module) {
 
 /**
  * Encapsulates all audio capture operation configuration options.
@@ -1327,7 +1327,7 @@ module.exports = CaptureAudioOptions;
 });
 
 // file: lib/common/plugin/CaptureError.js
-define("cordova/plugin/CaptureError", function(require, exports, module) {
+define("xwalk/plugin/CaptureError", function(require, exports, module) {
 
 /**
  * The CaptureError interface encapsulates all errors in the Capture API.
@@ -1352,7 +1352,7 @@ module.exports = CaptureError;
 });
 
 // file: lib/common/plugin/CaptureImageOptions.js
-define("cordova/plugin/CaptureImageOptions", function(require, exports, module) {
+define("xwalk/plugin/CaptureImageOptions", function(require, exports, module) {
 
 /**
  * Encapsulates all image capture operation configuration options.
@@ -1367,7 +1367,7 @@ module.exports = CaptureImageOptions;
 });
 
 // file: lib/common/plugin/CaptureVideoOptions.js
-define("cordova/plugin/CaptureVideoOptions", function(require, exports, module) {
+define("xwalk/plugin/CaptureVideoOptions", function(require, exports, module) {
 
 /**
  * Encapsulates all video capture operation configuration options.
@@ -1384,7 +1384,7 @@ module.exports = CaptureVideoOptions;
 });
 
 // file: lib/common/plugin/CompassError.js
-define("cordova/plugin/CompassError", function(require, exports, module) {
+define("xwalk/plugin/CompassError", function(require, exports, module) {
 
 /**
  *  CompassError.
@@ -1403,7 +1403,7 @@ module.exports = CompassError;
 });
 
 // file: lib/common/plugin/CompassHeading.js
-define("cordova/plugin/CompassHeading", function(require, exports, module) {
+define("xwalk/plugin/CompassHeading", function(require, exports, module) {
 
 var CompassHeading = function(magneticHeading, trueHeading, headingAccuracy, timestamp) {
   this.magneticHeading = magneticHeading;
@@ -1417,7 +1417,7 @@ module.exports = CompassHeading;
 });
 
 // file: lib/common/plugin/ConfigurationData.js
-define("cordova/plugin/ConfigurationData", function(require, exports, module) {
+define("xwalk/plugin/ConfigurationData", function(require, exports, module) {
 
 /**
  * Encapsulates a set of parameters that the capture device supports.
@@ -1438,7 +1438,7 @@ module.exports = ConfigurationData;
 });
 
 // file: lib/common/plugin/Connection.js
-define("cordova/plugin/Connection", function(require, exports, module) {
+define("xwalk/plugin/Connection", function(require, exports, module) {
 
 /**
  * Network status
@@ -1457,12 +1457,12 @@ module.exports = {
 });
 
 // file: lib/common/plugin/Contact.js
-define("cordova/plugin/Contact", function(require, exports, module) {
+define("xwalk/plugin/Contact", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    ContactError = require('cordova/plugin/ContactError'),
-    utils = require('cordova/utils');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    ContactError = require('xwalk/plugin/ContactError'),
+    utils = require('xwalk/utils');
 
 /**
 * Converts primitives into Complex Object
@@ -1473,7 +1473,7 @@ function convertIn(contact) {
     try {
       contact.birthday = new Date(parseFloat(value));
     } catch (exception){
-      console.log("Cordova Contact convertIn error: exception creating date.");
+      console.log("XWalk Contact convertIn error: exception creating date.");
     }
     return contact;
 }
@@ -1600,7 +1600,7 @@ Contact.prototype.save = function(successCB, errorCB) {
     var success = function(result) {
         if (result) {
             if (successCB) {
-                var fullContact = require('cordova/plugin/contacts').create(result);
+                var fullContact = require('xwalk/plugin/contacts').create(result);
                 successCB(convertIn(fullContact));
             }
         }
@@ -1619,7 +1619,7 @@ module.exports = Contact;
 });
 
 // file: lib/common/plugin/ContactAddress.js
-define("cordova/plugin/ContactAddress", function(require, exports, module) {
+define("xwalk/plugin/ContactAddress", function(require, exports, module) {
 
 /**
 * Contact address.
@@ -1650,7 +1650,7 @@ module.exports = ContactAddress;
 });
 
 // file: lib/common/plugin/ContactError.js
-define("cordova/plugin/ContactError", function(require, exports, module) {
+define("xwalk/plugin/ContactError", function(require, exports, module) {
 
 /**
  *  ContactError.
@@ -1677,7 +1677,7 @@ module.exports = ContactError;
 });
 
 // file: lib/common/plugin/ContactField.js
-define("cordova/plugin/ContactField", function(require, exports, module) {
+define("xwalk/plugin/ContactField", function(require, exports, module) {
 
 /**
 * Generic contact field.
@@ -1699,7 +1699,7 @@ module.exports = ContactField;
 });
 
 // file: lib/common/plugin/ContactFindOptions.js
-define("cordova/plugin/ContactFindOptions", function(require, exports, module) {
+define("xwalk/plugin/ContactFindOptions", function(require, exports, module) {
 
 /**
  * ContactFindOptions.
@@ -1718,7 +1718,7 @@ module.exports = ContactFindOptions;
 });
 
 // file: lib/common/plugin/ContactName.js
-define("cordova/plugin/ContactName", function(require, exports, module) {
+define("xwalk/plugin/ContactName", function(require, exports, module) {
 
 /**
 * Contact name.
@@ -1744,7 +1744,7 @@ module.exports = ContactName;
 });
 
 // file: lib/common/plugin/ContactOrganization.js
-define("cordova/plugin/ContactOrganization", function(require, exports, module) {
+define("xwalk/plugin/ContactOrganization", function(require, exports, module) {
 
 /**
 * Contact organization.
@@ -1773,7 +1773,7 @@ module.exports = ContactOrganization;
 });
 
 // file: lib/common/plugin/Coordinates.js
-define("cordova/plugin/Coordinates", function(require, exports, module) {
+define("xwalk/plugin/Coordinates", function(require, exports, module) {
 
 /**
  * This class contains position information.
@@ -1827,14 +1827,14 @@ module.exports = Coordinates;
 });
 
 // file: lib/common/plugin/DirectoryEntry.js
-define("cordova/plugin/DirectoryEntry", function(require, exports, module) {
+define("xwalk/plugin/DirectoryEntry", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    Entry = require('cordova/plugin/Entry'),
-    FileError = require('cordova/plugin/FileError'),
-    DirectoryReader = require('cordova/plugin/DirectoryReader');
+var argscheck = require('xwalk/argscheck'),
+    utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    Entry = require('xwalk/plugin/Entry'),
+    FileError = require('xwalk/plugin/FileError'),
+    DirectoryReader = require('xwalk/plugin/DirectoryReader');
 
 /**
  * An interface representing a directory on the file system.
@@ -1903,7 +1903,7 @@ DirectoryEntry.prototype.removeRecursively = function(successCallback, errorCall
 DirectoryEntry.prototype.getFile = function(path, options, successCallback, errorCallback) {
     argscheck.checkArgs('sOFF', 'DirectoryEntry.getFile', arguments);
     var win = successCallback && function(result) {
-        var FileEntry = require('cordova/plugin/FileEntry');
+        var FileEntry = require('xwalk/plugin/FileEntry');
         var entry = new FileEntry(result.name, result.fullPath);
         successCallback(entry);
     };
@@ -1918,10 +1918,10 @@ module.exports = DirectoryEntry;
 });
 
 // file: lib/common/plugin/DirectoryReader.js
-define("cordova/plugin/DirectoryReader", function(require, exports, module) {
+define("xwalk/plugin/DirectoryReader", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    FileError = require('cordova/plugin/FileError') ;
+var exec = require('xwalk/exec'),
+    FileError = require('xwalk/plugin/FileError') ;
 
 /**
  * An interface that lists the files and directories in a directory.
@@ -1942,10 +1942,10 @@ DirectoryReader.prototype.readEntries = function(successCallback, errorCallback)
         for (var i=0; i<result.length; i++) {
             var entry = null;
             if (result[i].isDirectory) {
-                entry = new (require('cordova/plugin/DirectoryEntry'))();
+                entry = new (require('xwalk/plugin/DirectoryEntry'))();
             }
             else if (result[i].isFile) {
-                entry = new (require('cordova/plugin/FileEntry'))();
+                entry = new (require('xwalk/plugin/FileEntry'))();
             }
             entry.isDirectory = result[i].isDirectory;
             entry.isFile = result[i].isFile;
@@ -1966,12 +1966,12 @@ module.exports = DirectoryReader;
 });
 
 // file: lib/common/plugin/Entry.js
-define("cordova/plugin/Entry", function(require, exports, module) {
+define("xwalk/plugin/Entry", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    FileError = require('cordova/plugin/FileError'),
-    Metadata = require('cordova/plugin/Metadata');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    FileError = require('xwalk/plugin/FileError'),
+    Metadata = require('xwalk/plugin/Metadata');
 
 /**
  * Represents a file or directory on the local file system.
@@ -2056,7 +2056,7 @@ Entry.prototype.moveTo = function(parent, newName, successCallback, errorCallbac
             if (entry) {
                 if (successCallback) {
                     // create appropriate Entry object
-                    var result = (entry.isDirectory) ? new (require('cordova/plugin/DirectoryEntry'))(entry.name, entry.fullPath) : new (require('cordova/plugin/FileEntry'))(entry.name, entry.fullPath);
+                    var result = (entry.isDirectory) ? new (require('xwalk/plugin/DirectoryEntry'))(entry.name, entry.fullPath) : new (require('xwalk/plugin/FileEntry'))(entry.name, entry.fullPath);
                     successCallback(result);
                 }
             }
@@ -2097,7 +2097,7 @@ Entry.prototype.copyTo = function(parent, newName, successCallback, errorCallbac
             if (entry) {
                 if (successCallback) {
                     // create appropriate Entry object
-                    var result = (entry.isDirectory) ? new (require('cordova/plugin/DirectoryEntry'))(entry.name, entry.fullPath) : new (require('cordova/plugin/FileEntry'))(entry.name, entry.fullPath);
+                    var result = (entry.isDirectory) ? new (require('xwalk/plugin/DirectoryEntry'))(entry.name, entry.fullPath) : new (require('xwalk/plugin/FileEntry'))(entry.name, entry.fullPath);
                     successCallback(result);
                 }
             }
@@ -2156,7 +2156,7 @@ Entry.prototype.remove = function(successCallback, errorCallback) {
 Entry.prototype.getParent = function(successCallback, errorCallback) {
     argscheck.checkArgs('FF', 'Entry.getParent', arguments);
     var win = successCallback && function(result) {
-        var DirectoryEntry = require('cordova/plugin/DirectoryEntry');
+        var DirectoryEntry = require('xwalk/plugin/DirectoryEntry');
         var entry = new DirectoryEntry(result.name, result.fullPath);
         successCallback(entry);
     };
@@ -2171,7 +2171,7 @@ module.exports = Entry;
 });
 
 // file: lib/common/plugin/File.js
-define("cordova/plugin/File", function(require, exports, module) {
+define("xwalk/plugin/File", function(require, exports, module) {
 
 /**
  * Constructor.
@@ -2195,7 +2195,7 @@ var File = function(name, fullPath, type, lastModifiedDate, size){
 };
 
 /**
- * Returns a "slice" of the file. Since Cordova Files don't contain the actual
+ * Returns a "slice" of the file. Since XWalk Files don't contain the actual
  * content, this really returns a File with adjusted start and end.
  * Slices of slices are supported.
  * start {Number} The index at which to start the slice (inclusive).
@@ -2233,14 +2233,14 @@ module.exports = File;
 });
 
 // file: lib/common/plugin/FileEntry.js
-define("cordova/plugin/FileEntry", function(require, exports, module) {
+define("xwalk/plugin/FileEntry", function(require, exports, module) {
 
-var utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    Entry = require('cordova/plugin/Entry'),
-    FileWriter = require('cordova/plugin/FileWriter'),
-    File = require('cordova/plugin/File'),
-    FileError = require('cordova/plugin/FileError');
+var utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    Entry = require('xwalk/plugin/Entry'),
+    FileWriter = require('xwalk/plugin/FileWriter'),
+    File = require('xwalk/plugin/File'),
+    FileError = require('xwalk/plugin/FileError');
 
 /**
  * An interface representing a file on the file system.
@@ -2298,7 +2298,7 @@ module.exports = FileEntry;
 });
 
 // file: lib/common/plugin/FileError.js
-define("cordova/plugin/FileError", function(require, exports, module) {
+define("xwalk/plugin/FileError", function(require, exports, module) {
 
 /**
  * FileError
@@ -2329,14 +2329,14 @@ module.exports = FileError;
 });
 
 // file: lib/common/plugin/FileReader.js
-define("cordova/plugin/FileReader", function(require, exports, module) {
+define("xwalk/plugin/FileReader", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    modulemapper = require('cordova/modulemapper'),
-    utils = require('cordova/utils'),
-    File = require('cordova/plugin/File'),
-    FileError = require('cordova/plugin/FileError'),
-    ProgressEvent = require('cordova/plugin/ProgressEvent'),
+var exec = require('xwalk/exec'),
+    modulemapper = require('xwalk/modulemapper'),
+    utils = require('xwalk/utils'),
+    File = require('xwalk/plugin/File'),
+    FileError = require('xwalk/plugin/FileError'),
+    ProgressEvent = require('xwalk/plugin/ProgressEvent'),
     origFileReader = modulemapper.getOriginalSymbol(this, 'FileReader');
 
 /**
@@ -2701,9 +2701,9 @@ module.exports = FileReader;
 });
 
 // file: lib/common/plugin/FileSystem.js
-define("cordova/plugin/FileSystem", function(require, exports, module) {
+define("xwalk/plugin/FileSystem", function(require, exports, module) {
 
-var DirectoryEntry = require('cordova/plugin/DirectoryEntry');
+var DirectoryEntry = require('xwalk/plugin/DirectoryEntry');
 
 /**
  * An interface representing a file system
@@ -2724,12 +2724,12 @@ module.exports = FileSystem;
 });
 
 // file: lib/common/plugin/FileTransfer.js
-define("cordova/plugin/FileTransfer", function(require, exports, module) {
+define("xwalk/plugin/FileTransfer", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    FileTransferError = require('cordova/plugin/FileTransferError'),
-    ProgressEvent = require('cordova/plugin/ProgressEvent');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    FileTransferError = require('xwalk/plugin/FileTransferError'),
+    ProgressEvent = require('xwalk/plugin/ProgressEvent');
 
 function newProgressEvent(result) {
     var pe = new ProgressEvent();
@@ -2882,10 +2882,10 @@ FileTransfer.prototype.download = function(source, target, successCallback, erro
         } else if (successCallback) {
             var entry = null;
             if (result.isDirectory) {
-                entry = new (require('cordova/plugin/DirectoryEntry'))();
+                entry = new (require('xwalk/plugin/DirectoryEntry'))();
             }
             else if (result.isFile) {
-                entry = new (require('cordova/plugin/FileEntry'))();
+                entry = new (require('xwalk/plugin/FileEntry'))();
             }
             entry.isDirectory = result.isDirectory;
             entry.isFile = result.isFile;
@@ -2916,7 +2916,7 @@ module.exports = FileTransfer;
 });
 
 // file: lib/common/plugin/FileTransferError.js
-define("cordova/plugin/FileTransferError", function(require, exports, module) {
+define("xwalk/plugin/FileTransferError", function(require, exports, module) {
 
 /**
  * FileTransferError
@@ -2940,7 +2940,7 @@ module.exports = FileTransferError;
 });
 
 // file: lib/common/plugin/FileUploadOptions.js
-define("cordova/plugin/FileUploadOptions", function(require, exports, module) {
+define("xwalk/plugin/FileUploadOptions", function(require, exports, module) {
 
 /**
  * Options to customize the HTTP request used to upload files.
@@ -2966,7 +2966,7 @@ module.exports = FileUploadOptions;
 });
 
 // file: lib/common/plugin/FileUploadResult.js
-define("cordova/plugin/FileUploadResult", function(require, exports, module) {
+define("xwalk/plugin/FileUploadResult", function(require, exports, module) {
 
 /**
  * FileUploadResult
@@ -2983,11 +2983,11 @@ module.exports = FileUploadResult;
 });
 
 // file: lib/common/plugin/FileWriter.js
-define("cordova/plugin/FileWriter", function(require, exports, module) {
+define("xwalk/plugin/FileWriter", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    FileError = require('cordova/plugin/FileError'),
-    ProgressEvent = require('cordova/plugin/ProgressEvent');
+var exec = require('xwalk/exec'),
+    FileError = require('xwalk/plugin/FileError'),
+    ProgressEvent = require('xwalk/plugin/ProgressEvent');
 
 /**
  * This class writes to the mobile device file system.
@@ -3264,7 +3264,7 @@ module.exports = FileWriter;
 });
 
 // file: lib/common/plugin/Flags.js
-define("cordova/plugin/Flags", function(require, exports, module) {
+define("xwalk/plugin/Flags", function(require, exports, module) {
 
 /**
  * Supplies arguments to methods that lookup or create files and directories.
@@ -3285,7 +3285,7 @@ module.exports = Flags;
 });
 
 // file: lib/common/plugin/GlobalizationError.js
-define("cordova/plugin/GlobalizationError", function(require, exports, module) {
+define("xwalk/plugin/GlobalizationError", function(require, exports, module) {
 
 
 /**
@@ -3311,11 +3311,11 @@ module.exports = GlobalizationError;
 });
 
 // file: lib/common/plugin/InAppBrowser.js
-define("cordova/plugin/InAppBrowser", function(require, exports, module) {
+define("xwalk/plugin/InAppBrowser", function(require, exports, module) {
 
-var exec = require('cordova/exec');
-var channel = require('cordova/channel');
-var modulemapper = require('cordova/modulemapper');
+var exec = require('xwalk/exec');
+var channel = require('xwalk/channel');
+var modulemapper = require('xwalk/modulemapper');
 
 function InAppBrowser() {
    this.channels = {
@@ -3390,9 +3390,9 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
 });
 
 // file: lib/common/plugin/LocalFileSystem.js
-define("cordova/plugin/LocalFileSystem", function(require, exports, module) {
+define("xwalk/plugin/LocalFileSystem", function(require, exports, module) {
 
-var exec = require('cordova/exec');
+var exec = require('xwalk/exec');
 
 /**
  * Represents a local file system.
@@ -3409,11 +3409,11 @@ module.exports = LocalFileSystem;
 });
 
 // file: lib/common/plugin/Media.js
-define("cordova/plugin/Media", function(require, exports, module) {
+define("xwalk/plugin/Media", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    utils = require('cordova/utils'),
-    exec = require('cordova/exec');
+var argscheck = require('xwalk/argscheck'),
+    utils = require('xwalk/utils'),
+    exec = require('xwalk/exec');
 
 var mediaObjects = {};
 
@@ -3589,7 +3589,7 @@ module.exports = Media;
 });
 
 // file: lib/common/plugin/MediaError.js
-define("cordova/plugin/MediaError", function(require, exports, module) {
+define("xwalk/plugin/MediaError", function(require, exports, module) {
 
 /**
  * This class contains information about any Media errors.
@@ -3629,12 +3629,12 @@ module.exports = _MediaError;
 });
 
 // file: lib/common/plugin/MediaFile.js
-define("cordova/plugin/MediaFile", function(require, exports, module) {
+define("xwalk/plugin/MediaFile", function(require, exports, module) {
 
-var utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    File = require('cordova/plugin/File'),
-    CaptureError = require('cordova/plugin/CaptureError');
+var utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    File = require('xwalk/plugin/File'),
+    CaptureError = require('xwalk/plugin/CaptureError');
 /**
  * Represents a single file.
  *
@@ -3669,7 +3669,7 @@ module.exports = MediaFile;
 });
 
 // file: lib/common/plugin/MediaFileData.js
-define("cordova/plugin/MediaFileData", function(require, exports, module) {
+define("xwalk/plugin/MediaFileData", function(require, exports, module) {
 
 /**
  * MediaFileData encapsulates format information of a media file.
@@ -3693,7 +3693,7 @@ module.exports = MediaFileData;
 });
 
 // file: lib/common/plugin/Metadata.js
-define("cordova/plugin/Metadata", function(require, exports, module) {
+define("xwalk/plugin/Metadata", function(require, exports, module) {
 
 /**
  * Information about the state of the file or directory
@@ -3709,9 +3709,9 @@ module.exports = Metadata;
 });
 
 // file: lib/common/plugin/Position.js
-define("cordova/plugin/Position", function(require, exports, module) {
+define("xwalk/plugin/Position", function(require, exports, module) {
 
-var Coordinates = require('cordova/plugin/Coordinates');
+var Coordinates = require('xwalk/plugin/Coordinates');
 
 var Position = function(coords, timestamp) {
     if (coords) {
@@ -3727,7 +3727,7 @@ module.exports = Position;
 });
 
 // file: lib/common/plugin/PositionError.js
-define("cordova/plugin/PositionError", function(require, exports, module) {
+define("xwalk/plugin/PositionError", function(require, exports, module) {
 
 /**
  * Position error object
@@ -3750,7 +3750,7 @@ module.exports = PositionError;
 });
 
 // file: lib/common/plugin/ProgressEvent.js
-define("cordova/plugin/ProgressEvent", function(require, exports, module) {
+define("xwalk/plugin/ProgressEvent", function(require, exports, module) {
 
 // If ProgressEvent exists in global context, use it already, otherwise use our own polyfill
 // Feature test: See if we can instantiate a native ProgressEvent;
@@ -3802,16 +3802,16 @@ module.exports = ProgressEvent;
 });
 
 // file: lib/common/plugin/accelerometer.js
-define("cordova/plugin/accelerometer", function(require, exports, module) {
+define("xwalk/plugin/accelerometer", function(require, exports, module) {
 
 /**
  * This class provides access to device accelerometer data.
  * @constructor
  */
-var argscheck = require('cordova/argscheck'),
-    utils = require("cordova/utils"),
-    exec = require("cordova/exec"),
-    Acceleration = require('cordova/plugin/Acceleration');
+var argscheck = require('xwalk/argscheck'),
+    utils = require("xwalk/utils"),
+    exec = require("xwalk/exec"),
+    Acceleration = require('xwalk/plugin/Acceleration');
 
 // Is the accel sensor running?
 var running = false;
@@ -3957,20 +3957,20 @@ module.exports = accelerometer;
 });
 
 // file: lib/common/plugin/accelerometer/symbols.js
-define("cordova/plugin/accelerometer/symbols", function(require, exports, module) {
+define("xwalk/plugin/accelerometer/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.defaults('cordova/plugin/Acceleration', 'Acceleration');
-modulemapper.defaults('cordova/plugin/accelerometer', 'navigator.accelerometer');
+modulemapper.defaults('xwalk/plugin/Acceleration', 'Acceleration');
+modulemapper.defaults('xwalk/plugin/accelerometer', 'navigator.accelerometer');
 
 });
 
 // file: lib/android/plugin/android/app.js
-define("cordova/plugin/android/app", function(require, exports, module) {
+define("xwalk/plugin/android/app", function(require, exports, module) {
 
-var exec = require('cordova/exec');
+var exec = require('xwalk/exec');
 
 module.exports = {
   /**
@@ -4045,12 +4045,12 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/device.js
-define("cordova/plugin/android/device", function(require, exports, module) {
+define("xwalk/plugin/android/device", function(require, exports, module) {
 
-var channel = require('cordova/channel'),
-    utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    app = require('cordova/plugin/android/app');
+var channel = require('xwalk/channel'),
+    utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    app = require('xwalk/plugin/android/app');
 
 module.exports = {
     /*
@@ -4090,19 +4090,19 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/nativeapiprovider.js
-define("cordova/plugin/android/nativeapiprovider", function(require, exports, module) {
+define("xwalk/plugin/android/nativeapiprovider", function(require, exports, module) {
 
 /**
  * Exports the ExposedJsApi.java object if available, otherwise exports the PromptBasedNativeApi.
  */
 
-var nativeApi = this._cordovaNative || require('cordova/plugin/android/promptbasednativeapi');
+var nativeApi = this._xwalkNative || require('xwalk/plugin/android/promptbasednativeapi');
 var currentApi = nativeApi;
 
 module.exports = {
     get: function() { return currentApi; },
     setPreferPrompt: function(value) {
-        currentApi = value ? require('cordova/plugin/android/promptbasednativeapi') : nativeApi;
+        currentApi = value ? require('xwalk/plugin/android/promptbasednativeapi') : nativeApi;
     },
     // Used only by tests.
     set: function(value) {
@@ -4113,9 +4113,9 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/notification.js
-define("cordova/plugin/android/notification", function(require, exports, module) {
+define("xwalk/plugin/android/notification", function(require, exports, module) {
 
-var exec = require('cordova/exec');
+var exec = require('xwalk/exec');
 
 /**
  * Provides Android enhanced notification API.
@@ -4172,7 +4172,7 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/promptbasednativeapi.js
-define("cordova/plugin/android/promptbasednativeapi", function(require, exports, module) {
+define("xwalk/plugin/android/promptbasednativeapi", function(require, exports, module) {
 
 /**
  * Implements the API of ExposedJsApi.java, but uses prompt() to communicate.
@@ -4194,11 +4194,11 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/storage.js
-define("cordova/plugin/android/storage", function(require, exports, module) {
+define("xwalk/plugin/android/storage", function(require, exports, module) {
 
-var utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    channel = require('cordova/channel');
+var utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    channel = require('xwalk/channel');
 
 var queryQueue = {};
 
@@ -4490,11 +4490,11 @@ module.exports = {
 });
 
 // file: lib/android/plugin/android/storage/openDatabase.js
-define("cordova/plugin/android/storage/openDatabase", function(require, exports, module) {
+define("xwalk/plugin/android/storage/openDatabase", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper'),
-    storage = require('cordova/plugin/android/storage');
+var modulemapper = require('xwalk/modulemapper'),
+    storage = require('xwalk/plugin/android/storage');
 
 var originalOpenDatabase = modulemapper.getOriginalSymbol(window, 'openDatabase');
 
@@ -4523,25 +4523,25 @@ module.exports = function(name, version, desc, size) {
 });
 
 // file: lib/android/plugin/android/storage/symbols.js
-define("cordova/plugin/android/storage/symbols", function(require, exports, module) {
+define("xwalk/plugin/android/storage/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/android/storage/openDatabase', 'openDatabase');
+modulemapper.clobbers('xwalk/plugin/android/storage/openDatabase', 'openDatabase');
 
 
 });
 
 // file: lib/common/plugin/battery.js
-define("cordova/plugin/battery", function(require, exports, module) {
+define("xwalk/plugin/battery", function(require, exports, module) {
 
 /**
  * This class contains information about the current battery status.
  * @constructor
  */
-var cordova = require('cordova'),
-    exec = require('cordova/exec');
+var xwalk = require('xwalk'),
+    exec = require('xwalk/exec');
 
 function handlers() {
   return battery.channels.batterystatus.numHandlers +
@@ -4554,9 +4554,9 @@ var Battery = function() {
     this._isPlugged = null;
     // Create new event handlers on the window (returns a channel instance)
     this.channels = {
-      batterystatus:cordova.addWindowEventHandler("batterystatus"),
-      batterylow:cordova.addWindowEventHandler("batterylow"),
-      batterycritical:cordova.addWindowEventHandler("batterycritical")
+      batterystatus:xwalk.addWindowEventHandler("batterystatus"),
+      batterylow:xwalk.addWindowEventHandler("batterylow"),
+      batterycritical:xwalk.addWindowEventHandler("batterycritical")
     };
     for (var key in this.channels) {
         this.channels[key].onHasSubscribersChange = Battery.onHasSubscribersChange;
@@ -4587,15 +4587,15 @@ Battery.prototype._status = function(info) {
     var level = info.level;
         if (me._level !== level || me._isPlugged !== info.isPlugged) {
             // Fire batterystatus event
-            cordova.fireWindowEvent("batterystatus", info);
+            xwalk.fireWindowEvent("batterystatus", info);
 
             // Fire low battery event
             if (level === 20 || level === 5) {
                 if (level === 20) {
-                    cordova.fireWindowEvent("batterylow", info);
+                    xwalk.fireWindowEvent("batterylow", info);
                 }
                 else {
-                    cordova.fireWindowEvent("batterycritical", info);
+                    xwalk.fireWindowEvent("batterycritical", info);
                 }
             }
         }
@@ -4618,32 +4618,32 @@ module.exports = battery;
 });
 
 // file: lib/common/plugin/battery/symbols.js
-define("cordova/plugin/battery/symbols", function(require, exports, module) {
+define("xwalk/plugin/battery/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.defaults('cordova/plugin/battery', 'navigator.battery');
+modulemapper.defaults('xwalk/plugin/battery', 'navigator.battery');
 
 });
 
 // file: lib/common/plugin/camera/symbols.js
-define("cordova/plugin/camera/symbols", function(require, exports, module) {
+define("xwalk/plugin/camera/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.defaults('cordova/plugin/Camera', 'navigator.camera');
-modulemapper.defaults('cordova/plugin/CameraConstants', 'Camera');
-modulemapper.defaults('cordova/plugin/CameraPopoverOptions', 'CameraPopoverOptions');
+modulemapper.defaults('xwalk/plugin/Camera', 'navigator.camera');
+modulemapper.defaults('xwalk/plugin/CameraConstants', 'Camera');
+modulemapper.defaults('xwalk/plugin/CameraPopoverOptions', 'CameraPopoverOptions');
 
 });
 
 // file: lib/common/plugin/capture.js
-define("cordova/plugin/capture", function(require, exports, module) {
+define("xwalk/plugin/capture", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    MediaFile = require('cordova/plugin/MediaFile');
+var exec = require('xwalk/exec'),
+    MediaFile = require('xwalk/plugin/MediaFile');
 
 /**
  * Launches a capture of different types.
@@ -4718,29 +4718,29 @@ module.exports = new Capture();
 });
 
 // file: lib/common/plugin/capture/symbols.js
-define("cordova/plugin/capture/symbols", function(require, exports, module) {
+define("xwalk/plugin/capture/symbols", function(require, exports, module) {
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/CaptureError', 'CaptureError');
-modulemapper.clobbers('cordova/plugin/CaptureAudioOptions', 'CaptureAudioOptions');
-modulemapper.clobbers('cordova/plugin/CaptureImageOptions', 'CaptureImageOptions');
-modulemapper.clobbers('cordova/plugin/CaptureVideoOptions', 'CaptureVideoOptions');
-modulemapper.clobbers('cordova/plugin/ConfigurationData', 'ConfigurationData');
-modulemapper.clobbers('cordova/plugin/MediaFile', 'MediaFile');
-modulemapper.clobbers('cordova/plugin/MediaFileData', 'MediaFileData');
-modulemapper.clobbers('cordova/plugin/capture', 'navigator.device.capture');
+modulemapper.clobbers('xwalk/plugin/CaptureError', 'CaptureError');
+modulemapper.clobbers('xwalk/plugin/CaptureAudioOptions', 'CaptureAudioOptions');
+modulemapper.clobbers('xwalk/plugin/CaptureImageOptions', 'CaptureImageOptions');
+modulemapper.clobbers('xwalk/plugin/CaptureVideoOptions', 'CaptureVideoOptions');
+modulemapper.clobbers('xwalk/plugin/ConfigurationData', 'ConfigurationData');
+modulemapper.clobbers('xwalk/plugin/MediaFile', 'MediaFile');
+modulemapper.clobbers('xwalk/plugin/MediaFileData', 'MediaFileData');
+modulemapper.clobbers('xwalk/plugin/capture', 'navigator.device.capture');
 
 });
 
 // file: lib/common/plugin/compass.js
-define("cordova/plugin/compass", function(require, exports, module) {
+define("xwalk/plugin/compass", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    utils = require('cordova/utils'),
-    CompassHeading = require('cordova/plugin/CompassHeading'),
-    CompassError = require('cordova/plugin/CompassError'),
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    utils = require('xwalk/utils'),
+    CompassHeading = require('xwalk/plugin/CompassHeading'),
+    CompassError = require('xwalk/plugin/CompassError'),
     timers = {},
     compass = {
         /**
@@ -4821,24 +4821,24 @@ module.exports = compass;
 });
 
 // file: lib/common/plugin/compass/symbols.js
-define("cordova/plugin/compass/symbols", function(require, exports, module) {
+define("xwalk/plugin/compass/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/CompassHeading', 'CompassHeading');
-modulemapper.clobbers('cordova/plugin/CompassError', 'CompassError');
-modulemapper.clobbers('cordova/plugin/compass', 'navigator.compass');
+modulemapper.clobbers('xwalk/plugin/CompassHeading', 'CompassHeading');
+modulemapper.clobbers('xwalk/plugin/CompassError', 'CompassError');
+modulemapper.clobbers('xwalk/plugin/compass', 'navigator.compass');
 
 });
 
 // file: lib/common/plugin/console-via-logger.js
-define("cordova/plugin/console-via-logger", function(require, exports, module) {
+define("xwalk/plugin/console-via-logger", function(require, exports, module) {
 
 //------------------------------------------------------------------------------
 
-var logger = require("cordova/plugin/logger");
-var utils  = require("cordova/utils");
+var logger = require("xwalk/plugin/logger");
+var utils  = require("xwalk/utils");
 
 //------------------------------------------------------------------------------
 // object that we're exporting
@@ -5005,13 +5005,13 @@ for (var key in console) {
 });
 
 // file: lib/common/plugin/contacts.js
-define("cordova/plugin/contacts", function(require, exports, module) {
+define("xwalk/plugin/contacts", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    ContactError = require('cordova/plugin/ContactError'),
-    utils = require('cordova/utils'),
-    Contact = require('cordova/plugin/Contact');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    ContactError = require('xwalk/plugin/ContactError'),
+    utils = require('xwalk/utils'),
+    Contact = require('xwalk/plugin/Contact');
 
 /**
 * Represents a group of Contacts.
@@ -5066,32 +5066,32 @@ module.exports = contacts;
 });
 
 // file: lib/common/plugin/contacts/symbols.js
-define("cordova/plugin/contacts/symbols", function(require, exports, module) {
+define("xwalk/plugin/contacts/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/contacts', 'navigator.contacts');
-modulemapper.clobbers('cordova/plugin/Contact', 'Contact');
-modulemapper.clobbers('cordova/plugin/ContactAddress', 'ContactAddress');
-modulemapper.clobbers('cordova/plugin/ContactError', 'ContactError');
-modulemapper.clobbers('cordova/plugin/ContactField', 'ContactField');
-modulemapper.clobbers('cordova/plugin/ContactFindOptions', 'ContactFindOptions');
-modulemapper.clobbers('cordova/plugin/ContactName', 'ContactName');
-modulemapper.clobbers('cordova/plugin/ContactOrganization', 'ContactOrganization');
+modulemapper.clobbers('xwalk/plugin/contacts', 'navigator.contacts');
+modulemapper.clobbers('xwalk/plugin/Contact', 'Contact');
+modulemapper.clobbers('xwalk/plugin/ContactAddress', 'ContactAddress');
+modulemapper.clobbers('xwalk/plugin/ContactError', 'ContactError');
+modulemapper.clobbers('xwalk/plugin/ContactField', 'ContactField');
+modulemapper.clobbers('xwalk/plugin/ContactFindOptions', 'ContactFindOptions');
+modulemapper.clobbers('xwalk/plugin/ContactName', 'ContactName');
+modulemapper.clobbers('xwalk/plugin/ContactOrganization', 'ContactOrganization');
 
 });
 
 // file: lib/common/plugin/device.js
-define("cordova/plugin/device", function(require, exports, module) {
+define("xwalk/plugin/device", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    channel = require('cordova/channel'),
-    utils = require('cordova/utils'),
-    exec = require('cordova/exec');
+var argscheck = require('xwalk/argscheck'),
+    channel = require('xwalk/channel'),
+    utils = require('xwalk/utils'),
+    exec = require('xwalk/exec');
 
-// Tell cordova channel to wait on the CordovaInfoReady event
-channel.waitForInitialization('onCordovaInfoReady');
+// Tell xwalk channel to wait on the XWalkInfoReady event
+channel.waitForInitialization('onXWalkInfoReady');
 
 /**
  * This represents the mobile device, and provides properties for inspecting the model, version, UUID of the
@@ -5103,27 +5103,27 @@ function Device() {
     this.platform = null;
     this.version = null;
     this.uuid = null;
-    this.cordova = null;
+    this.xwalk = null;
     this.model = null;
 
     var me = this;
 
-    channel.onCordovaReady.subscribe(function() {
+    channel.onXWalkReady.subscribe(function() {
         me.getInfo(function(info) {
-            var buildLabel = info.cordova;
-            if (buildLabel != CORDOVA_JS_BUILD_LABEL) {
-                buildLabel += ' JS=' + CORDOVA_JS_BUILD_LABEL;
+            var buildLabel = info.xwalk;
+            if (buildLabel != XWALK_JS_BUILD_LABEL) {
+                buildLabel += ' JS=' + XWALK_JS_BUILD_LABEL;
             }
             me.available = true;
             me.platform = info.platform;
             me.version = info.version;
             me.uuid = info.uuid;
-            me.cordova = buildLabel;
+            me.xwalk = buildLabel;
             me.model = info.model;
-            channel.onCordovaInfoReady.fire();
+            channel.onXWalkInfoReady.fire();
         },function(e) {
             me.available = false;
-            utils.alert("[ERROR] Error initializing Cordova: " + e);
+            utils.alert("[ERROR] Error initializing XWalk: " + e);
         });
     });
 }
@@ -5144,21 +5144,21 @@ module.exports = new Device();
 });
 
 // file: lib/android/plugin/device/symbols.js
-define("cordova/plugin/device/symbols", function(require, exports, module) {
+define("xwalk/plugin/device/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/device', 'device');
-modulemapper.merges('cordova/plugin/android/device', 'device');
+modulemapper.clobbers('xwalk/plugin/device', 'device');
+modulemapper.merges('xwalk/plugin/android/device', 'device');
 
 });
 
 // file: lib/common/plugin/echo.js
-define("cordova/plugin/echo", function(require, exports, module) {
+define("xwalk/plugin/echo", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    utils = require('cordova/utils');
+var exec = require('xwalk/exec'),
+    utils = require('xwalk/utils');
 
 /**
  * Sends the given message through exec() to the Echo plugin, which sends it back to the successCallback.
@@ -5193,60 +5193,60 @@ module.exports = function(successCallback, errorCallback, message, forceAsync) {
 });
 
 // file: lib/android/plugin/file/symbols.js
-define("cordova/plugin/file/symbols", function(require, exports, module) {
+define("xwalk/plugin/file/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper'),
-    symbolshelper = require('cordova/plugin/file/symbolshelper');
+var modulemapper = require('xwalk/modulemapper'),
+    symbolshelper = require('xwalk/plugin/file/symbolshelper');
 
 symbolshelper(modulemapper.clobbers);
 
 });
 
 // file: lib/common/plugin/file/symbolshelper.js
-define("cordova/plugin/file/symbolshelper", function(require, exports, module) {
+define("xwalk/plugin/file/symbolshelper", function(require, exports, module) {
 
 module.exports = function(exportFunc) {
-    exportFunc('cordova/plugin/DirectoryEntry', 'DirectoryEntry');
-    exportFunc('cordova/plugin/DirectoryReader', 'DirectoryReader');
-    exportFunc('cordova/plugin/Entry', 'Entry');
-    exportFunc('cordova/plugin/File', 'File');
-    exportFunc('cordova/plugin/FileEntry', 'FileEntry');
-    exportFunc('cordova/plugin/FileError', 'FileError');
-    exportFunc('cordova/plugin/FileReader', 'FileReader');
-    exportFunc('cordova/plugin/FileSystem', 'FileSystem');
-    exportFunc('cordova/plugin/FileUploadOptions', 'FileUploadOptions');
-    exportFunc('cordova/plugin/FileUploadResult', 'FileUploadResult');
-    exportFunc('cordova/plugin/FileWriter', 'FileWriter');
-    exportFunc('cordova/plugin/Flags', 'Flags');
-    exportFunc('cordova/plugin/LocalFileSystem', 'LocalFileSystem');
-    exportFunc('cordova/plugin/Metadata', 'Metadata');
-    exportFunc('cordova/plugin/ProgressEvent', 'ProgressEvent');
-    exportFunc('cordova/plugin/requestFileSystem', 'requestFileSystem');
-    exportFunc('cordova/plugin/resolveLocalFileSystemURI', 'resolveLocalFileSystemURI');
+    exportFunc('xwalk/plugin/DirectoryEntry', 'DirectoryEntry');
+    exportFunc('xwalk/plugin/DirectoryReader', 'DirectoryReader');
+    exportFunc('xwalk/plugin/Entry', 'Entry');
+    exportFunc('xwalk/plugin/File', 'File');
+    exportFunc('xwalk/plugin/FileEntry', 'FileEntry');
+    exportFunc('xwalk/plugin/FileError', 'FileError');
+    exportFunc('xwalk/plugin/FileReader', 'FileReader');
+    exportFunc('xwalk/plugin/FileSystem', 'FileSystem');
+    exportFunc('xwalk/plugin/FileUploadOptions', 'FileUploadOptions');
+    exportFunc('xwalk/plugin/FileUploadResult', 'FileUploadResult');
+    exportFunc('xwalk/plugin/FileWriter', 'FileWriter');
+    exportFunc('xwalk/plugin/Flags', 'Flags');
+    exportFunc('xwalk/plugin/LocalFileSystem', 'LocalFileSystem');
+    exportFunc('xwalk/plugin/Metadata', 'Metadata');
+    exportFunc('xwalk/plugin/ProgressEvent', 'ProgressEvent');
+    exportFunc('xwalk/plugin/requestFileSystem', 'requestFileSystem');
+    exportFunc('xwalk/plugin/resolveLocalFileSystemURI', 'resolveLocalFileSystemURI');
 };
 
 });
 
 // file: lib/common/plugin/filetransfer/symbols.js
-define("cordova/plugin/filetransfer/symbols", function(require, exports, module) {
+define("xwalk/plugin/filetransfer/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/FileTransfer', 'FileTransfer');
-modulemapper.clobbers('cordova/plugin/FileTransferError', 'FileTransferError');
+modulemapper.clobbers('xwalk/plugin/FileTransfer', 'FileTransfer');
+modulemapper.clobbers('xwalk/plugin/FileTransferError', 'FileTransferError');
 
 });
 
 // file: lib/common/plugin/geolocation.js
-define("cordova/plugin/geolocation", function(require, exports, module) {
+define("xwalk/plugin/geolocation", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    utils = require('cordova/utils'),
-    exec = require('cordova/exec'),
-    PositionError = require('cordova/plugin/PositionError'),
-    Position = require('cordova/plugin/Position');
+var argscheck = require('xwalk/argscheck'),
+    utils = require('xwalk/utils'),
+    exec = require('xwalk/exec'),
+    PositionError = require('xwalk/plugin/PositionError'),
+    Position = require('xwalk/plugin/Position');
 
 var timers = {};   // list of timers in use
 
@@ -5436,24 +5436,24 @@ module.exports = geolocation;
 });
 
 // file: lib/common/plugin/geolocation/symbols.js
-define("cordova/plugin/geolocation/symbols", function(require, exports, module) {
+define("xwalk/plugin/geolocation/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.defaults('cordova/plugin/geolocation', 'navigator.geolocation');
-modulemapper.clobbers('cordova/plugin/PositionError', 'PositionError');
-modulemapper.clobbers('cordova/plugin/Position', 'Position');
-modulemapper.clobbers('cordova/plugin/Coordinates', 'Coordinates');
+modulemapper.defaults('xwalk/plugin/geolocation', 'navigator.geolocation');
+modulemapper.clobbers('xwalk/plugin/PositionError', 'PositionError');
+modulemapper.clobbers('xwalk/plugin/Position', 'Position');
+modulemapper.clobbers('xwalk/plugin/Coordinates', 'Coordinates');
 
 });
 
 // file: lib/common/plugin/globalization.js
-define("cordova/plugin/globalization", function(require, exports, module) {
+define("xwalk/plugin/globalization", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    exec = require('cordova/exec'),
-    GlobalizationError = require('cordova/plugin/GlobalizationError');
+var argscheck = require('xwalk/argscheck'),
+    exec = require('xwalk/exec'),
+    GlobalizationError = require('xwalk/plugin/GlobalizationError');
 
 var globalization = {
 
@@ -5825,28 +5825,28 @@ module.exports = globalization;
 });
 
 // file: lib/common/plugin/globalization/symbols.js
-define("cordova/plugin/globalization/symbols", function(require, exports, module) {
+define("xwalk/plugin/globalization/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/globalization', 'navigator.globalization');
-modulemapper.clobbers('cordova/plugin/GlobalizationError', 'GlobalizationError');
+modulemapper.clobbers('xwalk/plugin/globalization', 'navigator.globalization');
+modulemapper.clobbers('xwalk/plugin/GlobalizationError', 'GlobalizationError');
 
 });
 
 // file: lib/android/plugin/inappbrowser/symbols.js
-define("cordova/plugin/inappbrowser/symbols", function(require, exports, module) {
+define("xwalk/plugin/inappbrowser/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/InAppBrowser', 'open');
+modulemapper.clobbers('xwalk/plugin/InAppBrowser', 'open');
 
 });
 
 // file: lib/common/plugin/logger.js
-define("cordova/plugin/logger", function(require, exports, module) {
+define("xwalk/plugin/logger", function(require, exports, module) {
 
 //------------------------------------------------------------------------------
 // The logger module exports the following properties/functions:
@@ -5871,8 +5871,8 @@ define("cordova/plugin/logger", function(require, exports, module) {
 
 var logger = exports;
 
-var exec    = require('cordova/exec');
-var utils   = require('cordova/utils');
+var exec    = require('xwalk/exec');
+var utils   = require('xwalk/utils');
 
 var UseConsole   = true;
 var UseLogger    = true;
@@ -6055,7 +6055,7 @@ logger.logLevel = function(level /* , ... */) {
     // Log using the console if that is enabled
     if (UseConsole) {
         // make sure console is not using logger
-        if (console.__usingCordovaLogger) {
+        if (console.__usingXWalkLogger) {
             throw new Error("console and logger are too intertwingly");
         }
 
@@ -6176,35 +6176,35 @@ document.addEventListener("deviceready", logger.__onDeviceReady, false);
 });
 
 // file: lib/common/plugin/logger/symbols.js
-define("cordova/plugin/logger/symbols", function(require, exports, module) {
+define("xwalk/plugin/logger/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/logger', 'cordova.logger');
+modulemapper.clobbers('xwalk/plugin/logger', 'xwalk.logger');
 
 });
 
 // file: lib/android/plugin/media/symbols.js
-define("cordova/plugin/media/symbols", function(require, exports, module) {
+define("xwalk/plugin/media/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.defaults('cordova/plugin/Media', 'Media');
-modulemapper.clobbers('cordova/plugin/MediaError', 'MediaError');
+modulemapper.defaults('xwalk/plugin/Media', 'Media');
+modulemapper.clobbers('xwalk/plugin/MediaError', 'MediaError');
 
 });
 
 // file: lib/common/plugin/network.js
-define("cordova/plugin/network", function(require, exports, module) {
+define("xwalk/plugin/network", function(require, exports, module) {
 
-var exec = require('cordova/exec'),
-    cordova = require('cordova'),
-    channel = require('cordova/channel'),
-    utils = require('cordova/utils');
+var exec = require('xwalk/exec'),
+    xwalk = require('xwalk'),
+    channel = require('xwalk/channel'),
+    utils = require('xwalk/utils');
 
-// Link the onLine property with the Cordova-supplied network info.
+// Link the onLine property with the XWalk-supplied network info.
 // This works because we clobber the naviagtor object with our own
 // object in bootstrap.js.
 if (typeof navigator != 'undefined') {
@@ -6231,13 +6231,13 @@ var me = new NetworkConnection();
 var timerId = null;
 var timeout = 500;
 
-channel.onCordovaReady.subscribe(function() {
+channel.onXWalkReady.subscribe(function() {
     me.getInfo(function(info) {
         me.type = info;
         if (info === "none") {
             // set a timer if still offline at the end of timer send the offline event
             timerId = setTimeout(function(){
-                cordova.fireDocumentEvent("offline");
+                xwalk.fireDocumentEvent("offline");
                 timerId = null;
             }, timeout);
         } else {
@@ -6246,19 +6246,19 @@ channel.onCordovaReady.subscribe(function() {
                 clearTimeout(timerId);
                 timerId = null;
             }
-            cordova.fireDocumentEvent("online");
+            xwalk.fireDocumentEvent("online");
         }
 
         // should only fire this once
-        if (channel.onCordovaConnectionReady.state !== 2) {
-            channel.onCordovaConnectionReady.fire();
+        if (channel.onXWalkConnectionReady.state !== 2) {
+            channel.onXWalkConnectionReady.fire();
         }
     },
     function (e) {
-        // If we can't get the network info we should still tell Cordova
+        // If we can't get the network info we should still tell XWalk
         // to fire the deviceready event.
-        if (channel.onCordovaConnectionReady.state !== 2) {
-            channel.onCordovaConnectionReady.fire();
+        if (channel.onXWalkConnectionReady.state !== 2) {
+            channel.onXWalkConnectionReady.fire();
         }
         console.log("Error initializing Network Connection: " + e);
     });
@@ -6269,22 +6269,22 @@ module.exports = me;
 });
 
 // file: lib/common/plugin/networkstatus/symbols.js
-define("cordova/plugin/networkstatus/symbols", function(require, exports, module) {
+define("xwalk/plugin/networkstatus/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/network', 'navigator.network.connection', 'navigator.network.connection is deprecated. Use navigator.connection instead.');
-modulemapper.clobbers('cordova/plugin/network', 'navigator.connection');
-modulemapper.defaults('cordova/plugin/Connection', 'Connection');
+modulemapper.clobbers('xwalk/plugin/network', 'navigator.network.connection', 'navigator.network.connection is deprecated. Use navigator.connection instead.');
+modulemapper.clobbers('xwalk/plugin/network', 'navigator.connection');
+modulemapper.defaults('xwalk/plugin/Connection', 'Connection');
 
 });
 
 // file: lib/common/plugin/notification.js
-define("cordova/plugin/notification", function(require, exports, module) {
+define("xwalk/plugin/notification", function(require, exports, module) {
 
-var exec = require('cordova/exec');
-var platform = require('cordova/platform');
+var exec = require('xwalk/exec');
+var platform = require('xwalk/platform');
 
 /**
  * Provides access to notifications on the device.
@@ -6384,23 +6384,23 @@ module.exports = {
 });
 
 // file: lib/android/plugin/notification/symbols.js
-define("cordova/plugin/notification/symbols", function(require, exports, module) {
+define("xwalk/plugin/notification/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/notification', 'navigator.notification');
-modulemapper.merges('cordova/plugin/android/notification', 'navigator.notification');
+modulemapper.clobbers('xwalk/plugin/notification', 'navigator.notification');
+modulemapper.merges('xwalk/plugin/android/notification', 'navigator.notification');
 
 });
 
 // file: lib/common/plugin/requestFileSystem.js
-define("cordova/plugin/requestFileSystem", function(require, exports, module) {
+define("xwalk/plugin/requestFileSystem", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    FileError = require('cordova/plugin/FileError'),
-    FileSystem = require('cordova/plugin/FileSystem'),
-    exec = require('cordova/exec');
+var argscheck = require('xwalk/argscheck'),
+    FileError = require('xwalk/plugin/FileError'),
+    FileSystem = require('xwalk/plugin/FileSystem'),
+    exec = require('xwalk/exec');
 
 /**
  * Request a file system in which to store application data.
@@ -6441,13 +6441,13 @@ module.exports = requestFileSystem;
 });
 
 // file: lib/common/plugin/resolveLocalFileSystemURI.js
-define("cordova/plugin/resolveLocalFileSystemURI", function(require, exports, module) {
+define("xwalk/plugin/resolveLocalFileSystemURI", function(require, exports, module) {
 
-var argscheck = require('cordova/argscheck'),
-    DirectoryEntry = require('cordova/plugin/DirectoryEntry'),
-    FileEntry = require('cordova/plugin/FileEntry'),
-    FileError = require('cordova/plugin/FileError'),
-    exec = require('cordova/exec');
+var argscheck = require('xwalk/argscheck'),
+    DirectoryEntry = require('xwalk/plugin/DirectoryEntry'),
+    FileEntry = require('xwalk/plugin/FileEntry'),
+    FileError = require('xwalk/plugin/FileError'),
+    exec = require('xwalk/exec');
 
 /**
  * Look up file system Entry referred to by local URI.
@@ -6490,9 +6490,9 @@ module.exports = function(uri, successCallback, errorCallback) {
 });
 
 // file: lib/common/plugin/splashscreen.js
-define("cordova/plugin/splashscreen", function(require, exports, module) {
+define("xwalk/plugin/splashscreen", function(require, exports, module) {
 
-var exec = require('cordova/exec');
+var exec = require('xwalk/exec');
 
 var splashscreen = {
     show:function() {
@@ -6508,30 +6508,30 @@ module.exports = splashscreen;
 });
 
 // file: lib/common/plugin/splashscreen/symbols.js
-define("cordova/plugin/splashscreen/symbols", function(require, exports, module) {
+define("xwalk/plugin/splashscreen/symbols", function(require, exports, module) {
 
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
-modulemapper.clobbers('cordova/plugin/splashscreen', 'navigator.splashscreen');
+modulemapper.clobbers('xwalk/plugin/splashscreen', 'navigator.splashscreen');
 
 });
 
 // file: lib/common/symbols.js
-define("cordova/symbols", function(require, exports, module) {
+define("xwalk/symbols", function(require, exports, module) {
 
-var modulemapper = require('cordova/modulemapper');
+var modulemapper = require('xwalk/modulemapper');
 
 // Use merges here in case others symbols files depend on this running first,
 // but fail to declare the dependency with a require().
-modulemapper.merges('cordova', 'cordova');
-modulemapper.clobbers('cordova/exec', 'cordova.exec');
-modulemapper.clobbers('cordova/exec', 'Cordova.exec');
+modulemapper.merges('xwalk', 'xwalk');
+modulemapper.clobbers('xwalk/exec', 'xwalk.exec');
+modulemapper.clobbers('xwalk/exec', 'XWalk.exec');
 
 });
 
 // file: lib/common/utils.js
-define("cordova/utils", function(require, exports, module) {
+define("xwalk/utils", function(require, exports, module) {
 
 var utils = exports;
 
@@ -6700,16 +6700,16 @@ function UUIDcreatePart(length) {
 
 });
 
-window.cordova = require('cordova');
+window.xwalk = require('xwalk');
 // file: lib/scripts/bootstrap.js
 
 (function (context) {
-    if (context._cordovaJsLoaded) {
-        throw new Error('cordova.js included multiple times.');
+    if (context._xwalkJsLoaded) {
+        throw new Error('xwalk.js included multiple times.');
     }
-    context._cordovaJsLoaded = true;
+    context._xwalkJsLoaded = true;
 
-    var channel = require('cordova/channel');
+    var channel = require('xwalk/channel');
     var platformInitChannelsArray = [channel.onNativeReady, channel.onPluginsReady];
 
     function logUnfiredChannels(arr) {
@@ -6731,12 +6731,12 @@ window.cordova = require('cordova');
     // Replace navigator before any modules are required(), to ensure it happens as soon as possible.
     // We replace it so that properties that can't be clobbered can instead be overridden.
     function replaceNavigator(origNavigator) {
-        var CordovaNavigator = function() {};
-        CordovaNavigator.prototype = origNavigator;
-        var newNavigator = new CordovaNavigator();
+        var XWalkNavigator = function() {};
+        XWalkNavigator.prototype = origNavigator;
+        var newNavigator = new XWalkNavigator();
         // This work-around really only applies to new APIs that are newer than Function.bind.
         // Without it, APIs such as getGamepads() break.
-        if (CordovaNavigator.bind) {
+        if (XWalkNavigator.bind) {
             for (var key in origNavigator) {
                 if (typeof origNavigator[key] == 'function') {
                     newNavigator[key] = origNavigator[key].bind(origNavigator);
@@ -6751,29 +6751,29 @@ window.cordova = require('cordova');
 
     // _nativeReady is global variable that the native side can set
     // to signify that the native code is ready. It is a global since
-    // it may be called before any cordova JS is ready.
+    // it may be called before any xwalk JS is ready.
     if (window._nativeReady) {
         channel.onNativeReady.fire();
     }
 
     /**
-     * Create all cordova objects once native side is ready.
+     * Create all xwalk objects once native side is ready.
      */
     channel.join(function() {
         // Call the platform-specific initialization
-        require('cordova/platform').initialize();
+        require('xwalk/platform').initialize();
 
         // Fire event to notify that all objects are created
-        channel.onCordovaReady.fire();
+        channel.onXWalkReady.fire();
 
         // Fire onDeviceReady event once page has fully loaded, all
-        // constructors have run and cordova info has been received from native
+        // constructors have run and xwalk info has been received from native
         // side.
         // This join call is deliberately made after platform.initialize() in
         // order that plugins may manipulate channel.deviceReadyChannelsArray
         // if necessary.
         channel.join(function() {
-            require('cordova').fireDocumentEvent('deviceready');
+            require('xwalk').fireDocumentEvent('deviceready');
         }, channel.deviceReadyChannelsArray);
 
     }, platformInitChannelsArray);
@@ -6782,7 +6782,7 @@ window.cordova = require('cordova');
 
 // file: lib/scripts/bootstrap-android.js
 
-require('cordova/channel').onNativeReady.fire();
+require('xwalk/channel').onNativeReady.fire();
 
 // file: lib/scripts/plugin_loader.js
 
@@ -6802,7 +6802,7 @@ require('cordova/channel').onNativeReady.fire();
     }
 
     function scriptErrorCallback(err) {
-        // Open Question: If a script path specified in cordova_plugins.js does not exist, do we fail for all?
+        // Open Question: If a script path specified in xwalk_extension.js does not exist, do we fail for all?
         // this is currently just continuing.
         scriptCounter--;
         if (scriptCounter === 0) {
@@ -6824,16 +6824,16 @@ require('cordova/channel').onNativeReady.fire();
     // * There are plugins defined and all plugins are finished loading.
     // * There are no plugins to load.
     function finishPluginLoading() {
-        context.cordova.require('cordova/channel').onPluginsReady.fire();
+        context.xwalk.require('xwalk/channel').onPluginsReady.fire();
     }
 
-    // Handler for the cordova_plugins.js content.
+    // Handler for the xwalk_extension.js content.
     // See plugman's plugin_loader.js for the details of this object.
     // This function is only called if the really is a plugins array that isn't empty.
     // Otherwise the onerror response handler will just call finishPluginLoading().
     function handlePluginsObject(modules, path) {
         // First create the callback for when all plugins are loaded.
-        var mapper = context.cordova.require('cordova/modulemapper');
+        var mapper = context.xwalk.require('xwalk/modulemapper');
         onScriptLoadingComplete = function() {
             // Loop through all the plugins and then through their clobbers and merges.
             for (var i = 0; i < modules.length; i++) {
@@ -6856,7 +6856,7 @@ require('cordova/channel').onNativeReady.fire();
                         // This can be skipped if it had any merges or clobbers, though,
                         // since the mapper will already have required the module.
                         if (module.runs && !(module.clobbers && module.clobbers.length) && !(module.merges && module.merges.length)) {
-                            context.cordova.require(module.id);
+                            context.xwalk.require(module.id);
                         }
                     }
                     catch(err) {
@@ -6877,7 +6877,7 @@ require('cordova/channel').onNativeReady.fire();
     // Find the root of the app
     var path = '';
     var scripts = document.getElementsByTagName('script');
-    var term = 'cordova.js';
+    var term = 'xwalk.js';
     for (var n = scripts.length-1; n>-1; n--) {
         var src = scripts[n].src;
         if (src.indexOf(term) == (src.length - term.length)) {
@@ -6886,8 +6886,8 @@ require('cordova/channel').onNativeReady.fire();
         }
     }
 
-    var plugins_json = path + 'cordova_plugins.json';
-    var plugins_js = path + 'cordova_plugins.js';
+    var plugins_json = path + 'xwalk_extension.json';
+    var plugins_js = path + 'xwalk_extension.js';
 
     // One some phones (Windows) this xhr.open throws an Access Denied exception
     // So lets keep trying, but with a script tag injection technique instead of XHR
@@ -6895,11 +6895,11 @@ require('cordova/channel').onNativeReady.fire();
         try {
             var script = document.createElement("script");
             script.onload = function(){
-                var list = cordova.require("cordova/plugin_list");
+                var list = xwalk.require("xwalk/plugin_list");
                 handlePluginsObject(list,path);
             };
             script.onerror = function() {
-                // Error loading cordova_plugins.js, file not found or something
+                // Error loading xwalk_extension.js, file not found or something
                 // this is an acceptable error, pre-3.0.0, so we just move on.
                 finishPluginLoading();
             };
@@ -6912,7 +6912,7 @@ require('cordova/channel').onNativeReady.fire();
     } 
 
 
-    // Try to XHR the cordova_plugins.json file asynchronously.
+    // Try to XHR the xwalk_extension.json file asynchronously.
     var xhr = new XMLHttpRequest();
     xhr.onload = function() {
         // If the response is a JSON string which composes an array, call handlePluginsObject.
