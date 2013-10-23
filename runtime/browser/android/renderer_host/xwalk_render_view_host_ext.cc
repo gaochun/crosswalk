@@ -84,6 +84,10 @@ void XWalkRenderViewHostExt::SetJsOnlineProperty(bool network_up) {
   Send(new XWalkViewMsg_SetJsOnlineProperty(network_up));
 }
 
+void XWalkRenderViewHostExt::RenderViewCreated(content::RenderViewHost* render_view_host) {
+  Send(new XWalkViewMsg_SetPermissions(pending_base_url_, pending_permissions_));
+}
+
 void XWalkRenderViewHostExt::RenderViewGone(base::TerminationStatus status) {
   DCHECK(CalledOnValidThread());
   for (std::map<int, DocumentHasImagesResult>::iterator pending_req =
@@ -137,6 +141,13 @@ void XWalkRenderViewHostExt::OnUpdateHitTestData(
   DCHECK(CalledOnValidThread());
   last_hit_test_data_ = hit_test_data;
   has_new_hit_test_data_ = true;
+}
+
+void XWalkRenderViewHostExt::SetPermissions(const char* base_url,
+                                            const char* permissions) {
+  DCHECK(CalledOnValidThread());
+  pending_base_url_ = base_url;
+  pending_permissions_ = permissions;
 }
 
 }  // namespace xwalk

@@ -7,6 +7,8 @@
 
 #include "content/public/renderer/render_process_observer.h"
 
+#include <string>
+
 #include "base/compiler_specific.h"
 
 namespace xwalk {
@@ -24,6 +26,8 @@ class XWalkRenderProcessObserver : public content::RenderProcessObserver {
 
  private:
   void OnSetJsOnlineProperty(bool network_up);
+  void OnSetPermissions(std::string base_url,
+                        std::string permissions);
 
   bool webkit_initialized_;
 };

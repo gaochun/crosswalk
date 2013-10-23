@@ -41,6 +41,7 @@ class XWalkContent {
   };
 
   void SetJsOnlineProperty(JNIEnv* env, jobject obj, jboolean network_up);
+  void SetPermissions(JNIEnv* env, jobject obj, jstring base_url, jstring permissions);
 
  private:
   content::WebContents* CreateWebContents(JNIEnv* env, jobject delegate);

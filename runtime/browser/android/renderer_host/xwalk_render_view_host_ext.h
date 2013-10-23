@@ -62,8 +62,13 @@ class XWalkRenderViewHostExt : public content::WebContentsObserver,
   void SetInitialPageScale(double page_scale_factor);
   void SetJsOnlineProperty(bool network_up);
 
+  // Sets the initial page scale. This overrides initial scale set by
+  // the meta viewport tag.
+  void SetPermissions(const char* base_url, const char* permissions);
+
  private:
   // content::WebContentsObserver implementation.
+  virtual void RenderViewCreated(content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void RenderViewGone(base::TerminationStatus status) OVERRIDE;
   virtual void DidNavigateAnyFrame(
       const content::LoadCommittedDetails& details,
@@ -84,6 +89,9 @@ class XWalkRenderViewHostExt : public content::WebContentsObserver,
   XWalkHitTestData last_hit_test_data_;
 
   bool has_new_hit_test_data_;
+
+  std::string pending_base_url_;
+  std::string pending_permissions_;
 
   DISALLOW_COPY_AND_ASSIGN(XWalkRenderViewHostExt);
 };

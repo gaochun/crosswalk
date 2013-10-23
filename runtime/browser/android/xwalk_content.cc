@@ -140,6 +140,21 @@ void XWalkContent::SetJsOnlineProperty(JNIEnv* env,
   render_view_host_ext_->SetJsOnlineProperty(network_up);
 }
 
+void XWalkContent::SetPermissions(JNIEnv* env,
+                                  jobject obj,
+                                  jstring base_url,
+                                  jstring permissions) {
+  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+
+  const char* url_str = env->GetStringUTFChars(base_url, 0);
+  const char* permissions_str = env->GetStringUTFChars(permissions, 0);
+
+  render_view_host_ext_->SetPermissions(url_str, permissions_str);
+
+  env->ReleaseStringUTFChars(base_url, url_str);
+  env->ReleaseStringUTFChars(permissions, permissions_str);
+}
+
 static jint Init(JNIEnv* env, jobject obj, jobject web_contents_delegate,
     jobject contents_client_bridge) {
   XWalkContent* xwalk_core_content =

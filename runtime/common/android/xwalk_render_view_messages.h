@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 // Multiply-included file, no traditional include guard.
+#include <string>
+
 #include "xwalk/runtime/common/android/xwalk_hit_test_data.h"
 #include "content/public/common/common_param_traits.h"
 #include "ipc/ipc_channel_handle.h"
@@ -77,6 +79,12 @@ IPC_MESSAGE_ROUTED1(XWalkViewMsg_SetInitialPageScale,
 // Set the Javascript online property for network availability change.
 IPC_MESSAGE_CONTROL1(XWalkViewMsg_SetJsOnlineProperty, bool /* network_up */)
 
+// Sets the initial page scale. This overrides initial scale set by
+// the meta viewport tag.
+IPC_MESSAGE_CONTROL2(XWalkViewMsg_SetPermissions,
+                    std::string /* base url */,
+                    std::string /* permission content*/)
+
 //-----------------------------------------------------------------------------
 // RenderView messages
 // These are messages sent from the renderer to the browser process.
@@ -103,4 +111,4 @@ IPC_MESSAGE_ROUTED0(XWalkViewHostMsg_PictureUpdated)
 IPC_MESSAGE_ROUTED1(XWalkViewHostMsg_DidActivateAcceleratedCompositing,
                     int /* input_handler_id */)
 
-
+IPC_MESSAGE_ROUTED0(XWalkViewHostMsg_RenderViewCreated)

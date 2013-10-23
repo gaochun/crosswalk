@@ -105,8 +105,7 @@ public class XWalkContent extends FrameLayout {
 
     void doLoadUrl(String url) {
         if (mPermissions != null) {
-            // TODO(gaochun): Call native method to set permissions.
-            // nativeSetPermissions(mXWalkContent, url, mPermissions);
+            nativeSetPermissions(mXWalkContent, url, mPermissions);
             mPermissions = null;
         }
         //TODO(Xingnan): Configure appropriate parameters here.
@@ -268,7 +267,5 @@ public class XWalkContent extends FrameLayout {
     private native String nativeDevToolsAgentId(int nativeXWalkContent);
     private native String nativeGetVersion(int nativeXWalkContent);
     private native void nativeSetJsOnlineProperty(int nativeXWalkContent, boolean networkUp);
-    
-    // TODO(gaochun): Enable native interface to set permissions 
-    // private native void nativeSetPermissions(int nativeXWalkContent, String baseUrl, String permissions);
+    private native void nativeSetPermissions(int nativeXWalkContent, String baseUrl, String permissions);
 }

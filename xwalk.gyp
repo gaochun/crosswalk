@@ -59,6 +59,10 @@
         '..',
       ],
       'sources': [
+        '../extensions/common/constants.cc',
+        '../extensions/common/constants.h',
+        '../extensions/common/url_pattern.cc',
+        '../extensions/common/url_pattern.h',
         'runtime/app/xwalk_main_delegate.cc',
         'runtime/app/xwalk_main_delegate.h',
         'runtime/browser/xwalk_application_mac.h',
