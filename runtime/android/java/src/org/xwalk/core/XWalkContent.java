@@ -43,6 +43,7 @@ public class XWalkContent extends FrameLayout {
     int mWebContents;
     boolean mReadyToLoad = false;
     String mPendingUrl = null;
+    String mPermissions = null;
 
     public XWalkContent(Context context, AttributeSet attrs, XWalkView xwView) {
         super(context, attrs);
@@ -103,6 +104,11 @@ public class XWalkContent extends FrameLayout {
     }
 
     void doLoadUrl(String url) {
+        if (mPermissions != null) {
+            // TODO(gaochun): Call native method to set permissions.
+            // nativeSetPermissions(mXWalkContent, url, mPermissions);
+            mPermissions = null;
+        }
         //TODO(Xingnan): Configure appropriate parameters here.
         // Handle the same url loading by parameters.
         if (TextUtils.equals(url, mContentView.getUrl())) {
@@ -122,6 +128,10 @@ public class XWalkContent extends FrameLayout {
             doLoadUrl(url);
         else
             mPendingUrl = url;
+    }
+
+    public void setPermissions(String permissions) {
+        mPermissions = permissions;
     }
 
     public void reload() {
@@ -258,4 +268,7 @@ public class XWalkContent extends FrameLayout {
     private native String nativeDevToolsAgentId(int nativeXWalkContent);
     private native String nativeGetVersion(int nativeXWalkContent);
     private native void nativeSetJsOnlineProperty(int nativeXWalkContent, boolean networkUp);
+    
+    // TODO(gaochun): Enable native interface to set permissions 
+    // private native void nativeSetPermissions(int nativeXWalkContent, String baseUrl, String permissions);
 }

@@ -23,11 +23,13 @@ public abstract class XWalkRuntimeViewProviderBase implements XWalkRuntimeViewPr
     private Activity mActivity;
     private XWalkExtensionManager mExtensionManager;
     private XWalkExtensionContextImpl mExtensionContext;
+    protected XWalkManifestParser mManifestParser;
 
     XWalkRuntimeViewProviderBase(Context context, Activity activity) {
         mContext = context;
         mActivity = activity;
         mExtensionManager = new XWalkExtensionManager(context, activity, this);
+        mManifestParser = new XWalkManifestParser(context, activity, this);
     }
 
     @Override

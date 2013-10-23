@@ -42,7 +42,11 @@ class XWalkCoreProviderImpl extends XWalkRuntimeViewProviderBase {
 
     @Override
     public void loadAppFromManifest(String manifestUrl) {
-        // TODO(yongsheng): Implement it.
+        mManifestParser.parse(manifestUrl);
+        String localPath = mManifestParser.getLocalPath();
+        String permissions = mManifestParser.getPermissions();
+        mXwalkView.setPermissions(permissions);
+        mXwalkView.loadUrl(localPath);
     }
 
     @Override

@@ -88,6 +88,10 @@ public class XWalkView extends FrameLayout {
         mContent.loadUrl(url);
     }
 
+    public void setPermissions(String permissions) {
+        mContent.setPermissions(permissions);
+    }
+
     public void reload() {
         mContent.reload();
     }
