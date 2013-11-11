@@ -13,6 +13,7 @@
 #include "content/public/browser/content_browser_client.h"
 
 namespace net {
+class CookieStore;
 class URLRequestContextGetter;
 }
 
@@ -93,6 +94,7 @@ class RuntimeContext : public content::BrowserContext {
   scoped_ptr<xwalk::application::ApplicationSystem> application_system_;
   scoped_refptr<RuntimeDownloadManagerDelegate> download_manager_delegate_;
   scoped_refptr<RuntimeURLRequestContextGetter> url_request_getter_;
+  scoped_refptr<net::CookieStore> cookie_store_;
 
   DISALLOW_COPY_AND_ASSIGN(RuntimeContext);
 };

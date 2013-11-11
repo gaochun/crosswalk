@@ -7,10 +7,16 @@
 #include <string>
 #include <utility>
 
+#include "base/android/path_utils.h"
+#include "base/base_paths_android.h"
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/threading/sequenced_worker_pool.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/cookie_store_factory.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
@@ -18,6 +24,7 @@
 #include "xwalk/application/browser/application_protocols.h"
 #include "xwalk/application/browser/application_system.h"
 #include "xwalk/application/common/constants.h"
+#include "xwalk/runtime/browser/android/cookie_manager.h"
 #include "xwalk/runtime/browser/runtime_download_manager_delegate.h"
 #include "xwalk/runtime/browser/runtime_url_request_context_getter.h"
 #include "xwalk/runtime/common/xwalk_paths.h"
@@ -102,10 +109,59 @@ base::FilePath RuntimeContext::GetPath() const {
 }
 
 #if defined(OS_ANDROID)
+namespace {
+
+void ImportLegacyCookieStore(const base::FilePath& cookie_store_path) {
+  // We use the old cookie store to create the new cookie store only if the
+  // new cookie store does not exist.
+  if (base::PathExists(cookie_store_path))
+    return;
+
+  // WebViewClassic gets the database path from Context and appends a
+  // hardcoded name. (see https://android.googlesource.com/platform/frameworks/base/+/bf6f6f9de72c9fd15e6bd/core/java/android/webkit/JniUtil.java and
+  // https://android.googlesource.com/platform/external/webkit/+/7151ed0c74599/Source/WebKit/android/WebCoreSupport/WebCookieJar.cpp)
+  base::FilePath old_cookie_store_path;
+  base::android::GetDatabaseDirectory(&old_cookie_store_path);
+  old_cookie_store_path = old_cookie_store_path.Append(
+      FILE_PATH_LITERAL("webviewCookiesChromium.db"));
+  if (base::PathExists(old_cookie_store_path) &&
+      !base::Move(old_cookie_store_path, cookie_store_path)) {
+    LOG(WARNING) << "Failed to move old cookie store path from "
+                 << old_cookie_store_path.AsUTF8Unsafe() << " to "
+                 << cookie_store_path.AsUTF8Unsafe();
+  }
+}
+
+}
+
 void RuntimeContext::InitializeBeforeThreadCreation() {
 }
 
 void RuntimeContext::PreMainMessageLoopRun() {
+  base::FilePath user_data_dir;
+  if (!PathService::Get(base::DIR_ANDROID_APP_DATA, &user_data_dir)) {
+    NOTREACHED() << "Failed to get app data directory for Crosswalk";
+  }
+
+  base::FilePath cookie_store_path = user_data_dir.Append(
+      FILE_PATH_LITERAL("Cookies"));
+  scoped_refptr<base::SequencedTaskRunner> background_task_runner =
+      BrowserThread::GetBlockingPool()->GetSequencedTaskRunner(
+          BrowserThread::GetBlockingPool()->GetSequenceToken());
+
+  background_task_runner->PostTask(
+      FROM_HERE,
+      base::Bind(ImportLegacyCookieStore, cookie_store_path));
+
+  cookie_store_ = content::CreatePersistentCookieStore(
+      cookie_store_path,
+      true,
+      NULL,
+      NULL,
+      background_task_runner);
+
+  cookie_store_->GetCookieMonster()->SetPersistSessionCookies(true);
+  SetCookieMonsterOnNetworkStackInit(cookie_store_->GetCookieMonster());
 }
 #endif
 
