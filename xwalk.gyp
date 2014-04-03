@@ -221,6 +221,8 @@
         'runtime/common/android/xwalk_render_view_messages.h',
         'runtime/common/paths_mac.h',
         'runtime/common/paths_mac.mm',
+        'runtime/common/url_pattern.cc',
+        'runtime/common/url_pattern.h',
         'runtime/common/xwalk_common_messages.cc',
         'runtime/common/xwalk_common_messages.h',
         'runtime/common/xwalk_common_message_generator.cc',
